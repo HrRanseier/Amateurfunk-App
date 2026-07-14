@@ -1,0 +1,43 @@
+{
+  "summary": "Funk-Toolbox Expo web preview tested end-to-end via Playwright at mobile viewport 390x844. 22/23 functional checks passed. Hub renders with title 'Funk-Toolbox' and all 4 tiles (morse/callsign/bandplan/qcodes). Tapping active Morsecode tile navigates to /morse; tapping disabled tiles (callsign/bandplan/qcodes) correctly shows 'Bald verfügbar' toast (app-toast/app-toast-text) without navigating. Morse encode: SOS -> '... --- ...', 'SOS HELP' -> '... --- ... / .... . .-.. .--.'. Frequency + WPM sliders update live via drag (700->950Hz, 20->37WPM). play-tone-button records a history chip, chip tap restores text to encode-text-input, and history persists across full page reload. clear-history-button clears the chips. Decode tab: dot/dash tap buttons, letter-gap, word-gap, delete, reset, and direct morse text input all decode correctly ('...'->'S', tapped SOS decoded to 'SOS', direct '.... . .-.. .-.. --- / .-- --- .-. .-.. -..' -> 'HELLO WORLD'). Tab switching morse-tab-encode/decode works. ONE genuine bug: after direct URL load or hard reload of /morse, the header-back-button (router.back()) does nothing because Expo Router has no history entry ('GO_BACK not handled' console warning). Sliders work by drag but not by keyboard arrows (test-side note only, not a product bug). No red-screen errors, no failing API calls (app is fully offline as designed).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "app/morse.tsx ScreenHeader onBack",
+        "issue": "Tapping header-back-button on /morse when the page was loaded directly (e.g. deep link or full reload) does nothing. router.back() emits 'The action GO_BACK was not handled by any navigator' because there is no history. Fallback needed: if (router.canGoBack()) router.back(); else router.replace('/').",
+        "testID": "header-back-button",
+        "priority": "MEDIUM"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {
+        "component": "src/components/Toast.tsx",
+        "issue": "Warning 'props.pointerEvents is deprecated. Use style.pointerEvents' on the Animated.View toast. Move pointerEvents=\"none\" into the style prop. Reference: /app/frontend/src/components/Toast.tsx:44"
+      }
+    ]
+  },
+  "test_report_links": ["/app/test_reports/iteration_1.json"],
+  "action_items": [
+    "Fix back-button navigation in /app/frontend/app/morse.tsx: replace router.back() with `if (router.canGoBack()) router.back(); else router.replace('/')` so direct/deep-linked loads of /morse can still return to the hub.",
+    "In /app/frontend/src/components/Toast.tsx (line 44), move pointerEvents=\"none\" from a prop into the style object (style={{ pointerEvents: 'none', ... }}) to silence the deprecation warning."
+  ],
+  "critical_code_review_comments": [
+    "Overall code is clean, small, well-typed. testIDs are placed on every interactive/critical element as required.",
+    "morse.ts encode/decode logic is correct and matches ITU spec including 'PARIS' timing (1200/WPM).",
+    "useHistory persists to storage util and correctly de-duplicates + caps at 12 items.",
+    "app/morse.tsx: router.back() has no fallback for direct navigation — see action item above.",
+    "Toast component: pointerEvents used as a prop (deprecated in RN 0.75+); move into style.",
+    "No hardcoded URLs; EXPO_PUBLIC_BACKEND_URL is present in .env even though app is offline-only (acceptable).",
+    "All text is wrapped in <Text>; all styles use StyleSheet.create; no HTML elements used."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (no backend by design)", "frontend": "22/23 (95.6%)"},
+  "seed_data_creation": "None. App is fully offline; history state was created and cleared during tests via UI (localStorage key funk_morse_history_v1).",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "App has no backend; test only via Playwright on https://funk-toolbox.preview.emergentagent.com/. Use mobile viewport 390x844. Sliders (freq-slider/wpm-slider) do NOT respond to keyboard arrow keys in web preview — use page.mouse.down/move/up drag over the slider bounding box to change values. Playback outputs (Ton/Licht/Vibration) are hardware features that will not produce sound/light on web; verify only that the buttons toggle their active/stop state and that play-tone-button appends to history. History persists in localStorage under key 'funk_morse_history_v1'. After any fix to morse.tsx back handler, re-run: (1) deep-load /morse then tap header-back-button and confirm it lands on / with app-title visible.",
+  "rca_of_issue": "Bug: header-back-button on /morse is a no-op when the screen is opened directly (deep link, page reload, or shared URL). Root cause: /app/frontend/app/morse.tsx line 21 calls router.back() unconditionally. Expo Router's Stack has no previous entry in that scenario, so it emits the warning 'The action GO_BACK was not handled by any navigator' and does nothing. Reproduction: 1) Navigate directly to https://funk-toolbox.preview.emergentagent.com/morse (or reload the page while on /morse). 2) Tap the back chevron (header-back-button). 3) URL stays at /morse; hub is never shown. Fix: import { useRouter } from 'expo-router' already done — replace `onBack={() => router.back()}` with `onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))}` so that a hub fallback is always available."
+}

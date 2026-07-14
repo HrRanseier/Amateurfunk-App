@@ -1,0 +1,47 @@
+import type { MaterialCommunityIcons } from "@expo/vector-icons";
+import type { ComponentProps } from "react";
+
+type IconName = ComponentProps<typeof MaterialCommunityIcons>["name"];
+
+// Single source of truth for the hub grid. Add a new object here (with a matching
+// screen file under /app) to introduce a new tool — no structural changes needed.
+export type ToolModule = {
+  id: string;
+  title: string;
+  icon: IconName;
+  route?: string;
+  enabled: boolean;
+  subtitle: string;
+};
+
+export const modules: ToolModule[] = [
+  {
+    id: "morse",
+    title: "Morsecode",
+    icon: "keyboard-outline",
+    route: "/morse",
+    enabled: true,
+    subtitle: "Text \u21C4 Morse",
+  },
+  {
+    id: "callsign",
+    title: "Rufzeichen",
+    icon: "antenna",
+    enabled: false,
+    subtitle: "Bald verf\u00FCgbar",
+  },
+  {
+    id: "bandplan",
+    title: "Bandplan",
+    icon: "chart-bar",
+    enabled: false,
+    subtitle: "Bald verf\u00FCgbar",
+  },
+  {
+    id: "qcodes",
+    title: "Q-Codes",
+    icon: "alphabetical",
+    enabled: false,
+    subtitle: "Bald verf\u00FCgbar",
+  },
+];

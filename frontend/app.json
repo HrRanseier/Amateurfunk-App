@@ -10,6 +10,9 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Nutzt die Kamera-LED als Morse-Taschenlampe"
+      },
       "bundleIdentifier": "com.emergent.funktoolbox.b246aq"
     },
     "android": {
@@ -18,6 +21,7 @@
         "backgroundColor": "#000000"
       },
       "edgeToEdgeEnabled": true,
+      "permissions": ["android.permission.CAMERA", "android.permission.VIBRATE"],
       "package": "com.emergent.funktoolbox.b246aq"
     },
     "web": {
@@ -27,6 +31,12 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Nutzt die Kamera-LED als Morse-Taschenlampe"
+        }
+      ],
       [
         "expo-splash-screen",
         {
