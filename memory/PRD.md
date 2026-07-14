@@ -27,17 +27,21 @@ Android-App für Amateurfunker. Hub-and-Module-Architektur: zentraler Startbilds
 
 ## Implemented (2026-06)
 - [x] Hub screen with module registry, active/disabled tiles, "Bald verfügbar" toast, haptics.
-- [x] Morse encode: live conversion, sine tone (WebView), flashlight (expo-camera), vibration; freq + WPM sliders; history chips (persisted).
-- [x] Morse decode: Punkt/Strich tap buttons, alt morse text input, Leerzeichen/Wort/Löschen/Reset, live decode.
-- [x] Reactive Light/Dark theme, custom Toast, keyboard handling, camera permission flow, back-button canGoBack fallback.
-- [x] Frontend tested (22/23, both fixes applied).
+- [x] **Morse module reworked into a single combined "Betrieb" screen** (Empfang + Senden on one page; old two-tab encode/decode removed).
+- [x] SENDEN: live char-by-char transmit queue (each typed char immediately encoded + queued), on-air char highlight, queue counter, backspace removes unsent chars, Reset; multi-select outputs Ton/Licht/Vibration (Ton default); Frequenz (400–1000Hz) + WPM sliders affect transmission in real time.
+- [x] EMPFANG: microphone → Goertzel → adaptive Morse decoder pipeline via native `expo-stream-audio` (1s noise calibration, on/off hysteresis, adaptive unit/WPM, 1/3/7 timing, live transcript with auto-scroll). NATIVE-ONLY: shows a clear "nur im veröffentlichten Build" notice in Expo Go / web preview.
+- [x] Pure decode + Goertzel logic unit-tested (frontend/scripts/decoder-selftest.ts → 7/7 pass): text→morse→timeline→decoder round-trips incl. adaptive speed; Goertzel frequency discrimination.
+- [x] Permissions: RECORD_AUDIO + CAMERA + VIBRATE (app.json + expo-stream-audio config plugin); mic denied → Open-Settings fallback.
+- [x] Reactive Light/Dark theme, custom Toast, keyboard handling, back-button canGoBack fallback.
+- [x] Frontend tested: hub/nav/toast (22/23) + combined screen send/toggles/sliders/receive-notice (11/11).
 
 ## Backlog
-- P1: Rufzeichen (callsign lookup/prefix), Bandplan (frequency band chart), Q-Codes (searchable list) modules.
-- P2: Adjustable dot/dash weighting, save named favorites, share morse output, on-the-fly morse "keyer" straight-key mode in decode.
+- P1: Rufzeichen, Bandplan, Q-Codes modules (registry-driven).
+- P2: adjustable dot/dash weighting, waterfall/spectrum view for receive, save/share sessions.
 
 ## Notes / Limitations
-- Ton/Licht/Vibration are HARDWARE features: fully testable only on a real Android build (Expo Go: tone+vibration work; flashlight requires a real device/build). Web preview cannot validate audio/torch/vibration.
+- Ton (WebView Web Audio) + Vibration work in Expo Go; Licht (torch) and **microphone live decoding require the published build** (expo-stream-audio is a native module, not in Expo Go / web). Receive decode validated via unit tests until a build is generated.
+- expo-stream-audio v0.1.3 is a young module; if the first native build surfaces API/behaviour differences, the wrapper in `src/morse/nativeAudio.ts` is the single place to adjust.
 
 ## Next Tasks
-- Await user feedback; likely next module implementation (Rufzeichen or Q-Codes).
+- Generate an Android build (Publish) to validate live mic decoding + torch on-device, then tune calibration thresholds if needed.
