@@ -41,10 +41,14 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {message !== null && (
         <Animated.View
           testID="app-toast"
-          pointerEvents="none"
           style={[
             styles.toast,
-            { bottom: insets.bottom + spacing.xxl, backgroundColor: colors.brandPrimary, opacity },
+            {
+              bottom: insets.bottom + spacing.xxl,
+              backgroundColor: colors.brandPrimary,
+              opacity,
+              pointerEvents: "none",
+            },
           ]}
         >
           <Text testID="app-toast-text" style={[styles.text, { color: colors.onBrandPrimary }]}>

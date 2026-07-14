@@ -18,7 +18,7 @@ export default function MorseScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.surface }]}>
-      <ScreenHeader title="Morsecode" onBack={() => router.back()} />
+      <ScreenHeader title="Morsecode" onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))} />
 
       <View style={[styles.segment, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
         {(["encode", "decode"] as const).map((key) => {
