@@ -34,6 +34,7 @@ Android-App für Amateurfunker. Hub-and-Module-Architektur: zentraler Startbilds
 - [x] Permissions: RECORD_AUDIO + CAMERA + VIBRATE (app.json + expo-stream-audio config plugin); mic denied → Open-Settings fallback.
 - [x] Reactive Light/Dark theme, custom Toast, keyboard handling, back-button canGoBack fallback.
 - [x] Frontend tested: hub/nav/toast (22/23) + combined screen send/toggles/sliders/receive-notice (11/11).
+- [x] **Betrieb screen re-laid-out as a chat-style 3-zone layout (2026-06):** fixed header (back + title + mic toggle with green pulse + settings gear), scrollable transcript-only middle (flex:1, auto-scroll, dismissible native-only banner), fixed footer above keyboard (compact 1-line send preview + queue/Reset row + full-width input) via `KeyboardAvoidingView`. Frequency/speed sliders + output selection moved into a `SettingsSheet` modal (Modal-based bottom-sheet). Functionality unchanged (same useMorseSender/useMorseReceiver hooks).
 
 ## Backlog
 - P1: Rufzeichen, Bandplan, Q-Codes modules (registry-driven).
