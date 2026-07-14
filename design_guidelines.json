@@ -1,0 +1,151 @@
+{
+  "app_name": "Funk-Toolbox",
+  "personality": "7 Dark-First Utility (Adapted for Light/Dark System Theme)",
+  "personality_one_liner": "A precision-engineered, tactical utility interface built for amateur radio operators in the field, combining high-contrast operational clarity with large touch targets.",
+  "color": {
+    "light": {
+      "surface": "#F5F5F5",
+      "onSurface": "#1A1A1A",
+      "surfaceSecondary": "#FFFFFF",
+      "onSurfaceSecondary": "#333333",
+      "surfaceTertiary": "#E0E0E0",
+      "onSurfaceTertiary": "#2E7D32",
+      "surfaceInverse": "#121212",
+      "onSurfaceInverse": "#F0F0F0",
+      "brand": "#2E7D32",
+      "brandPrimary": "#2E7D32",
+      "onBrandPrimary": "#FFFFFF",
+      "brandSecondary": "#388E3C",
+      "onBrandSecondary": "#FFFFFF",
+      "brandTertiary": "#C8E6C9",
+      "onBrandTertiary": "#1B5E20",
+      "success": "#388E3C",
+      "onSuccess": "#FFFFFF",
+      "warning": "#F57C00",
+      "onWarning": "#FFFFFF",
+      "error": "#D32F2F",
+      "onError": "#FFFFFF",
+      "border": "#E0E0E0",
+      "borderStrong": "#2E7D32",
+      "divider": "#E0E0E0"
+    },
+    "dark": {
+      "surface": "#121212",
+      "onSurface": "#F0F0F0",
+      "surfaceSecondary": "#1E1E1E",
+      "onSurfaceSecondary": "#E0E0E0",
+      "surfaceTertiary": "#2C2C2C",
+      "onSurfaceTertiary": "#4CAF50",
+      "surfaceInverse": "#F5F5F5",
+      "onSurfaceInverse": "#1A1A1A",
+      "brand": "#4CAF50",
+      "brandPrimary": "#4CAF50",
+      "onBrandPrimary": "#000000",
+      "brandSecondary": "#66BB6A",
+      "onBrandSecondary": "#000000",
+      "brandTertiary": "#1B5E20",
+      "onBrandTertiary": "#A5D6A7",
+      "success": "#4CAF50",
+      "onSuccess": "#000000",
+      "warning": "#FFA000",
+      "onWarning": "#000000",
+      "error": "#F44336",
+      "onError": "#000000",
+      "border": "#2C2C2C",
+      "borderStrong": "#4CAF50",
+      "divider": "#2C2C2C"
+    }
+  },
+  "typography": {
+    "displayFontFamily": "Space Grotesk",
+    "textFontFamily": "IBM Plex Sans",
+    "monoFontFamily": "Space Mono",
+    "scale": {
+      "sm": 12,
+      "base": 14,
+      "lg": 16,
+      "xl": 20,
+      "2xl": 24,
+      "3xl": 48
+    }
+  },
+  "spacing": {
+    "rule": "Generous spacing for large touch targets required in the field. Avoid cramped grid tiles. Inputs and sliders must have xl touch areas.",
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "2xl": 32,
+    "3xl": 48
+  },
+  "radius_tokens": {
+    "sm": 6,
+    "md": 12,
+    "lg": 16,
+    "pill": 999
+  },
+  "shadow_tier": "0",
+  "navigation": "stack_only",
+  "icon_set": "MaterialCommunityIcons",
+  "glassmorphism": {
+    "enabled": "false",
+    "do's": [],
+    "dont's": [
+      "Do not use blur or glass. Rely on solid colors, high contrast, and structural borders for a tactical, hardware feel."
+    ]
+  },
+  "platform_libraries": {
+    "glass": {
+      "ios": "solid surfaceSecondary",
+      "android": "solid surfaceSecondary",
+      "low_end_android_fallback": "solid surfaceSecondary"
+    },
+    "image": "expo-image",
+    "haptics": "expo-haptics",
+    "bottom_sheet": "@gorhom/bottom-sheet",
+    "animation": "react-native-reanimated",
+    "gesture": "react-native-gesture-handler"
+  },
+  "screens": [
+    {
+      "name": "Home (Hub)",
+      "purpose": "A dashboard hub launching various amateur radio tools via a grid layout.",
+      "states": {
+        "loading": "Centered spinner",
+        "empty": "N/A - static grid",
+        "error": "N/A"
+      },
+      "layout": "Root container uses safe area and `surface` background. Header text 'Funk-Toolbox' (xl, Space Grotesk, aligned left). Grid wrapper: 2 columns using `flexDirection: row`, `flexWrap: wrap`, `gap: md`, `justifyContent: space-between`. Grid Tile Card: width `(screenWidth - 2*lg - md) / 2`. Active Tile ('Morsecode', MaterialCommunityIcons 'keyboard-outline'): solid `surfaceSecondary`, 2pt `borderStrong` (brand color), `brandPrimary` icon tint, bold text. Disabled Tiles ('Rufzeichen', 'Bandplan', 'Q-Codes'): `surfaceTertiary` background, `md` radius, 50% opacity on content, tap shows Toast 'Bald verfügbar'."
+    },
+    {
+      "name": "Morsecode Tool",
+      "purpose": "A functional tool for encoding text to Morse and decoding tapped Morse to text with hardware-like controls.",
+      "states": {
+        "loading": "Centered spinner",
+        "empty": "Empty input fields show placeholder text.",
+        "error": "N/A"
+      },
+      "layout": "Header with native back arrow (<- Morsecode). Custom Segmented Control to switch between 'Text → Morse' and 'Morse → Text' (full width tabs with active `borderStrong` underline). Tab 1 (Text->Morse): Multiline text input area (`surfaceSecondary`, `md` radius) -> Live Morse output area (Space Mono font, large size, background `surfaceTertiary`) -> Row of 3 icon buttons (Tone/sine, Flashlight/flashlight, Vibration/vibrate) -> Two vertical sliders (Freq 400-1000Hz, Speed 20 WPM) labeled clearly. Tab 2 (Morse->Text): Top area shows translated text output. Below are two massive touch areas (flex: 1, `brandPrimary` high contrast borders/backgrounds) for 'Punkt' (dot) and 'Strich' (dash). Below them: Separator buttons ('Leerzeichen', 'Wort-Trenner') and clear/reset."
+    }
+  ],
+  "haptics": {
+    "events": {
+      "tile_tap": "selection",
+      "morse_dot_tap": "impactLight",
+      "morse_dash_tap": "impactMedium",
+      "slider_drag": "selection",
+      "playback_vibration": "impactHeavy"
+    }
+  },
+  "images": {},
+  "instructions_to_main_agent": [
+    "Strictly follow the color hex codes provided in the problem statement for both light and dark modes (mapped in the JSON).",
+    "Implement the `useColorScheme` hook from react-native to dynamically switch between the nested `light` and `dark` color maps. NO manual toggle button.",
+    "Use 'MaterialCommunityIcons' for all iconography, specifically 'keyboard-outline', 'antenna', 'chart-bar', and 'alphabetical' for the hub tiles.",
+    "For the Hub Grid, ensure each tile takes up 48% width (2 columns) with equal padding. Disabled tiles should visibly use opacity (e.g., 0.5) and a Android Toast fallback (e.g., ToastAndroid.show('Bald verfügbar')).",
+    "In the Morsecode tool (Tab 2), the 'Punkt' (dot) and 'Strich' (dash) buttons must be exceptionally large (minimum height 120pt, flex: 1 preferred) to allow blind tapping, matching standard mobile Morse app ergonomics.",
+    "Use `Space Mono` or `JetBrains Mono` for all Morse string outputs (`.-.`) to ensure characters align perfectly.",
+    "Wire `expo-haptics` heavily into the Morse -> Text tap buttons (`impactLight` for dot, `impactMedium` for dash)."
+  ]
+}
