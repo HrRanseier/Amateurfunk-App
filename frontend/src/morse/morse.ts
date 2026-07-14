@@ -13,7 +13,7 @@ export const MORSE_MAP: Record<string, string> = {
   '"': ".-..-.", $: "...-..-", "@": ".--.-.",
 };
 
-const REVERSE_MAP: Record<string, string> = Object.entries(MORSE_MAP).reduce(
+export const MORSE_REVERSE: Record<string, string> = Object.entries(MORSE_MAP).reduce(
   (acc, [char, code]) => {
     acc[code] = char;
     return acc;
@@ -46,7 +46,7 @@ export function morseToText(morse: string): string {
         .trim()
         .split(/\s+/)
         .filter(Boolean)
-        .map((code) => REVERSE_MAP[code] ?? "")
+        .map((code) => MORSE_REVERSE[code] ?? "")
         .join(""),
     )
     .join(" ")
@@ -93,4 +93,26 @@ export function vibrationPattern(segs: MorseSegment[]): number[] {
 
 export function totalDurationMs(segs: MorseSegment[]): number {
   return segs.reduce((sum, s) => sum + s.ms, 0);
+}
+
+// Timeline for a SINGLE character including its trailing gap, used by the live
+// send queue. Letters: symbols with 1-unit intra gaps + trailing 3-unit letter
+// gap. Space: a 4-unit silence (added to the preceding letter's 3-unit gap = a
+// 7-unit word gap).
+export function charTimeline(ch: string, unitMs: number): { segments: MorseSegment[]; durationMs: number } {
+  if (ch === " ") {
+    const seg = { on: false, ms: Math.round(unitMs * 4) };
+    return { segments: [seg], durationMs: seg.ms };
+  }
+  const code = MORSE_MAP[ch.toUpperCase()];
+  if (!code) return { segments: [], durationMs: 0 };
+  const segments: MorseSegment[] = [];
+  const symbols = code.split("");
+  symbols.forEach((sym, i) => {
+    segments.push({ on: true, ms: Math.round(sym === "." ? unitMs : unitMs * 3) });
+    if (i < symbols.length - 1) segments.push({ on: false, ms: Math.round(unitMs) });
+  });
+  segments.push({ on: false, ms: Math.round(unitMs * 3) });
+  const durationMs = segments.reduce((sum, s) => sum + s.ms, 0);
+  return { segments, durationMs };
 }

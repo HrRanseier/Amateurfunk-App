@@ -11,7 +11,8 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "Nutzt die Kamera-LED als Morse-Taschenlampe"
+        "NSCameraUsageDescription": "Nutzt die Kamera-LED als Morse-Taschenlampe",
+        "NSMicrophoneUsageDescription": "Empfängt und dekodiert Morsetöne über das Mikrofon"
       },
       "bundleIdentifier": "com.emergent.funktoolbox.b246aq"
     },
@@ -21,7 +22,11 @@
         "backgroundColor": "#000000"
       },
       "edgeToEdgeEnabled": true,
-      "permissions": ["android.permission.CAMERA", "android.permission.VIBRATE"],
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.VIBRATE",
+        "android.permission.RECORD_AUDIO"
+      ],
       "package": "com.emergent.funktoolbox.b246aq"
     },
     "web": {
@@ -45,7 +50,8 @@
           "resizeMode": "contain",
           "backgroundColor": "#000000"
         }
-      ]
+      ],
+      "expo-stream-audio"
     ],
     "experiments": {
       "typedRoutes": true

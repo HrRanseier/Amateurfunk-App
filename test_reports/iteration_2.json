@@ -1,0 +1,35 @@
+{
+  "summary": "Combined Morse 'Betrieb' screen tested end-to-end via Playwright on the public Expo web preview at mobile viewport 390x844. All 11 review-request items PASS. Home hub still renders with app-title and 4 tiles (morse/callsign/bandplan/qcodes). Tapping tool-tile-morse navigates to /morse; tapping disabled tiles shows 'Bald verfügbar' toast (app-toast) and does NOT navigate. Header shows 'Morsecode – Betrieb' and header-back-button returns to the hub (previous iteration's back-nav bug is fixed via router.canGoBack() fallback). EMPFANG: mic-toggle-button, receive-status, receive-transcript, receive-clear-button all render; receive-unavailable-notice IS shown as expected in the web preview; tapping mic-toggle-button does not crash (status stays 'Bereit'). mic-level-bar element is rendered (width 0% because level=0 on web — expected, not a bug). SENDEN: typing 'SOS' updates send-preview live, queue-count starts at '1 in Warteschlange' (chars pump immediately) and reaches '0 in Warteschlange' after transmission finishes (~1s). Appending 'HELP' while transmitting raises queue-count to '3 in Warteschlange'. Two backspaces on unsent chars reduce queue-count from 3 to 1. send-clear-button (Reset) empties input, resets preview to placeholder 'Übertragung erscheint hier', and queue-count to '0'. The currently on-air character is highlighted (bold + underline via textDecorationLine underline) — validated A→B→C progression via computed style scan. Output toggles: output-toggle-tone is active by default; output-toggle-vibrate and output-toggle-tone toggle their active/inactive visual state; output-toggle-light activates without crashing on web (useCameraPermissions() succeeds without a native permission prompt in the browser, no toast triggered — acceptable, no crash). Sliders: freq-slider drags from 700→920 Hz and wpm-slider drags from 20→11 WPM (test must call element.scrollIntoView first because sliders sit below the mobile fold inside KeyboardAwareScrollView). No red-screen / bundling errors. Only a benign deprecation warning 'props.pointerEvents is deprecated. Use style.pointerEvents' still emitted from Toast.tsx (already reported in iteration_1, unresolved).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {
+        "component": "src/components/Toast.tsx",
+        "issue": "Deprecation warning still emitted: 'props.pointerEvents is deprecated. Use style.pointerEvents'. Move pointerEvents=\"none\" from a prop into the style object. Reference: /app/frontend/src/components/Toast.tsx:~44 (carried over from iteration_1, not yet fixed)."
+      }
+    ]
+  },
+  "test_report_links": ["/app/test_reports/iteration_2.json", "/app/test_reports/iteration_1.json"],
+  "action_items": [
+    "(Carry-over, minor) Move pointerEvents=\"none\" from prop to style in /app/frontend/src/components/Toast.tsx (~line 44) to silence the RN deprecation warning.",
+    "(Optional polish) When the user taps output-toggle-light on the web preview and cam permission cannot actually be granted, consider showing the 'Kamerazugriff für Licht nötig' toast to align with the review-request expectation. Currently on web useCameraPermissions() reports granted:false but requestCamPerm() resolves granted:true (browser mock) so no toast fires; not a functional bug because subsequent transmit ignores the flashlight unless camRef.current is true and the CameraView is mounted."
+  ],
+  "critical_code_review_comments": [
+    "morse.tsx: back-button now correctly falls back to router.replace('/') — good.",
+    "SendSection.tsx: keeps queue state in refs and pumps on each onChangeText — correctly enqueues while transmitting.",
+    "useMorseSender.ts: queueCount formula `text.length - (onAirIndex != null ? onAirIndex + 1 : sentCount)` correctly excludes the currently on-air char from the count and reaches 0 when idle. Verified live.",
+    "ReceiveSection.tsx: correctly gates behavior via useMorseReceiver.status; shows receive-unavailable-notice when micAvailable is false (i.e. web/Expo Go).",
+    "All interactive elements have testID as required (send-text-input, send-preview, queue-count, send-clear-button, output-toggle-tone/light/vibrate, freq/wpm slider+value, mic-toggle-button, receive-status, receive-transcript, receive-clear-button, receive-unavailable-notice, header-back-button, app-title, tool-tile-*, app-toast/-text).",
+    "No hardcoded URLs; app is fully offline as designed."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (no backend by design)", "frontend": "11/11 review items PASS"},
+  "seed_data_creation": "None. App is offline; no persistence layer touched by the new combined screen.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "App has no backend. Test at https://funk-toolbox.preview.emergentagent.com/ with mobile viewport 390x844. IMPORTANT for sliders on /morse: they sit inside a KeyboardAwareScrollView and start OFF-SCREEN in a 844px viewport. Call `page.eval_on_selector('[data-testid=\"freq-slider\"]', \"el => el.scrollIntoView({block:'center'})\")` before dragging; window.scrollTo does NOT scroll the inner ScrollView. Use page.mouse.down/move(steps)/up to drag the thumb — keyboard arrows do not move Slider on web. The EMPFANG microphone pipeline is native-only; the web preview MUST show receive-unavailable-notice (validated). The queueCount label reads '<n> in Warteschlange' so assert with substring '0 in Warteschlange'.",
+  "rca_of_issue": "N/A — no functional regressions. Iteration_1's back-nav bug is fixed. Only lingering issue is the Toast pointerEvents deprecation warning (already reported, non-blocking)."
+}

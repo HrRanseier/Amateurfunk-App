@@ -1,71 +1,46 @@
-import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 
 import { ScreenHeader } from "@/src/components/ScreenHeader";
-import { DecodeTab } from "@/src/morse/DecodeTab";
-import { EncodeTab } from "@/src/morse/EncodeTab";
-import { fontSize, radius, spacing } from "@/src/theme/tokens";
+import { ReceiveSection } from "@/src/morse/ReceiveSection";
+import { SendSection } from "@/src/morse/SendSection";
+import { spacing } from "@/src/theme/tokens";
 import { useTheme } from "@/src/theme/useTheme";
-
-type Tab = "encode" | "decode";
 
 export default function MorseScreen() {
   const { colors } = useTheme();
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>("encode");
+  // Frequency & speed are shared: the decoder targets this frequency and seeds
+  // its unit from WPM; the sender uses both for live transmission.
+  const [freq, setFreq] = useState(700);
+  const [wpm, setWpm] = useState(20);
 
   return (
     <View style={[styles.root, { backgroundColor: colors.surface }]}>
-      <ScreenHeader title="Morsecode" onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))} />
-
-      <View style={[styles.segment, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
-        {(["encode", "decode"] as const).map((key) => {
-          const active = tab === key;
-          return (
-            <Pressable
-              key={key}
-              testID={`morse-tab-${key}`}
-              onPress={() => {
-                Haptics.selectionAsync();
-                setTab(key);
-              }}
-              style={[styles.segBtn, active && { backgroundColor: colors.brandPrimary }]}
-            >
-              <Text
-                style={[styles.segText, { color: active ? colors.onBrandPrimary : colors.onSurfaceMuted }]}
-              >
-                {key === "encode" ? "Text \u2192 Morse" : "Morse \u2192 Text"}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      <View style={styles.content}>{tab === "encode" ? <EncodeTab /> : <DecodeTab />}</View>
+      <ScreenHeader
+        title="Morsecode – Betrieb"
+        onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))}
+      />
+      <KeyboardAwareScrollView
+        style={styles.flex}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        bottomOffset={spacing.xl}
+      >
+        <ReceiveSection freq={freq} wpm={wpm} />
+        <View style={[styles.divider, { backgroundColor: colors.divider }]} />
+        <SendSection freq={freq} wpm={wpm} setFreq={setFreq} setWpm={setWpm} />
+      </KeyboardAwareScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  segment: {
-    flexDirection: "row",
-    marginHorizontal: spacing.lg,
-    marginTop: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    padding: 4,
-    gap: 4,
-  },
-  segBtn: {
-    flex: 1,
-    paddingVertical: spacing.md,
-    borderRadius: radius.sm,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  segText: { fontSize: fontSize.base, fontWeight: "700" },
-  content: { flex: 1 },
+  flex: { flex: 1 },
+  content: { padding: spacing.lg, paddingBottom: spacing.xxxl, gap: spacing.md },
+  divider: { height: StyleSheet.hairlineWidth, marginVertical: spacing.sm },
 });
