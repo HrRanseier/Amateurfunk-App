@@ -75,7 +75,7 @@ export const MorseAudio = forwardRef<MorseAudioHandle, { onEnded?: () => void }>
     if (Platform.OS === "web") return null;
 
     return (
-      <View style={styles.hidden} pointerEvents="none">
+      <View style={styles.hidden}>
         <WebView
           ref={webRef}
           source={{ html: HTML }}
@@ -101,5 +101,6 @@ const styles = StyleSheet.create({
     opacity: 0,
     top: -10,
     left: -10,
+    pointerEvents: "none",
   },
 });
