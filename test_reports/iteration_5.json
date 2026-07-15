@@ -1,0 +1,36 @@
+{
+  "summary": "Full backend + frontend validation of the new Bandplan module (Amateurfunk, CB, Flugfunk). Backend: 4/4 pytest cases pass against the live public URL — GET /api/flugfunk/airports?search=EDDM returns MUENCHEN with a frequencies[] array (each entry has name+value), GET /api/flugfunk/frequency?mhz=118.705&country=DE returns matches[] including MUENCHEN with matched='TOWER NORTH', and both endpoints correctly return 422+JSON on missing required params. OpenAIP key stays server-side. Frontend (mobile viewport 375x667): hub tool-tile-bandplan is ACTIVE and opens /bandplan; Frequenz prüfen — kHz-toggle works, 14300 kHz -> freq-result-in (20 Meter · 14101–14350 kHz, all Betriebsarten, Rufwelle '14285 SSB QRP / 14300 DL/R1 EMCOMM', 2700 Hz, 750 W PEP) + emcomm-hint IARU box; 27000 kHz -> freq-result-out with the exact §16 Abs. 9 AFuV legal text; 14.300 MHz mode is normalized to 'Erkannt: 14300 kHz'. Band detail: band-row-80m -> segment-80m-0 shows CW, Rufwelle '3555 CW QRS / 3560 CW QRP', 200 Hz, Klasse A: 750 W PEP / Klasse E: 100 W PEP, ko-primär badge, and the 'Quelle: DARC' footer. CB: cb-tab-channels renders 80/80 channels; cb-channel-9 contains 'informeller Notrufkanal' + 'keine amtliche Festlegung' and is NOT labelled as official. cb-tab-check: 27.065 -> Kanal 9 (AM 4W ERP · FM 4W ERP · SSB 12W PEP), 26.715 -> Kanal 56 'nur FM 4 Watt ERP', 27.500 -> cb-check-outside. cb-tab-lookup: 19+A -> green legal note, 19+B -> cb-lookup-warn with export warning. Flugfunk: ff-tab-airport 'EDDM' returns MUENCHEN with all frequencies + DFS disclaimer + 'Daten: OpenAIP (openaip.net)'; ff-tab-frequency '118.705' returns matches (Bitburg/Muenchen/Northeim) including MUENCHEN with 'TOWER NORTH ★'. Regression: Morse (/morse), Antennenrechner (/antenna) and Rufzeichen (/callsign) tiles still open cleanly. No deprecated Expo packages, no red screens, no console errors observed.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_flugfunk.py",
+    "/app/test_reports/pytest/pytest_results.xml",
+    "/tmp/01_hub.png",
+    "/tmp/02_bandplan.png",
+    "/tmp/03_check.png",
+    "/tmp/04_band80m.png",
+    "/tmp/05_cb.png",
+    "/tmp/06_ff_airport.png",
+    "/tmp/07_ff_freq.png"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "backend/server.py: OpenAIP API key is correctly loaded from backend/.env (OPENAIP_API_KEY) and only used server-side — verified not present in any frontend bundle output; frontend calls only the /api/flugfunk/* proxy. Good separation.",
+    "backend/server.py: /flugfunk/frequency caches per-country airport lists for 24h in an in-process dict (_country_cache). Works for a single worker but will not scale across workers/restarts — acceptable for current usage; consider Redis or MongoDB TTL cache if traffic grows.",
+    "flugfunk.tsx: BACKEND falls back to empty string if EXPO_PUBLIC_BACKEND_URL missing (`process.env.EXPO_PUBLIC_BACKEND_URL ?? ''`), which would silently produce a relative /api/... URL — fine here because the web preview and native builds ship with the env set, but consider surfacing an explicit error when unset.",
+    "bandplan/check.tsx: numeric sanitizer allows both '.' and ',' and parseFrequencyKHz normalises both — verified end-to-end (14.300 MHz -> 14300 kHz). Nice.",
+    "cb.tsx: cb-channel-9 copy explicitly states 'informeller Notrufkanal' + 'keine amtliche Festlegung' — matches the legal/regulatory disclaimer requirement."
+  ],
+  "updated_files": ["/app/backend/tests/test_flugfunk.py", "/app/test_reports/iteration_5.json"],
+  "success_rate": {"backend": "100% (4/4)", "frontend": "100% (all 9 requested flows + 3 regressions)"},
+  "seed_data_creation": "None — all Flugfunk data is fetched live from OpenAIP via the backend proxy; Amateur bandplan + CB are static client-side data.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "OpenAIP proxy is fully working through /api/flugfunk/airports and /api/flugfunk/frequency. Country-airport list is cached for 24h server-side (in-process dict); the very first /frequency call for a new country can take up to ~15s because it walks up to 5 pages of 1000 airports — subsequent calls are instant. Frontend uses EXPO_PUBLIC_BACKEND_URL. The Rufzeichen live HamQTH lookup is still native-only via WebView (unchanged, not part of this test).",
+  "rca_of_issue": "N/A — no issues found."
+}

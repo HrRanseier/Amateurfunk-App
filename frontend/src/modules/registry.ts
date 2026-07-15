@@ -43,8 +43,9 @@ export const modules: ToolModule[] = [
     id: "bandplan",
     title: "Bandplan",
     icon: "chart-bar",
-    enabled: false,
-    subtitle: "Bald verf\u00FCgbar",
+    route: "/bandplan",
+    enabled: true,
+    subtitle: "KW · CB · Flugfunk",
   },
   {
     id: "qcodes",

@@ -157,10 +157,24 @@ metadata:
   test_sequence: 0
   run_ui: false
 
+backend:
+  - task: "Flugfunk OpenAIP proxy — airport search + reverse frequency lookup"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: true
+        -agent: "main"
+        -comment: "GET /api/flugfunk/airports?search= proxies OpenAIP (apiKey query param, server-side only in OPENAIP_API_KEY). GET /api/flugfunk/frequency?mhz=&country=DE reverse-lookup with ±0.005 MHz tolerance over cached country airports (24h in-memory cache). Verified via curl: EDDM search returns freqs; 118.705 reverse -> BITBURG/MUENCHEN(TOWER NORTH)/NORTHEIM. External URL works."
+
 test_plan:
   current_focus:
-    - "Rufzeichen module — hub tile active + navigation"
-    - "Rufzeichen screen — input uppercase + search + web-only notice"
+    - "Bandplan main + band detail + Frequenz prüfen (Amateur)"
+    - "CB-Funk: Kanäle, Frequenz prüfen, Kanal→Frequenz A–J"
+    - "Flugfunk OpenAIP proxy — airport search + reverse frequency lookup"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -168,12 +182,18 @@ test_plan:
 agent_communication:
     -agent: "main"
     -message: |
-      Please test FRONTEND ONLY (web preview). Focus on the new Rufzeichen module UI + no regressions.
-      IMPORTANT: The live HamQTH lookup uses react-native-webview and is NATIVE-ONLY — it does NOT work in
-      the web preview (cross-origin). Do NOT treat missing live callsign data as a bug. In the web preview,
-      pressing Suchen MUST show the German notice with testID 'callsign-web-notice'. Verify:
-      1) Hub tile testID 'tool-tile-callsign' is active and navigates to the Rufzeichen screen.
-      2) 'callsign-input' auto-uppercases typed text; 'callsign-search-button' is disabled when input empty.
-      3) After entering a callsign and pressing search, 'callsign-web-notice' appears.
-      4) Back navigation returns to hub.
-      5) Regression: Morsecode + Antennenrechner tiles still open and Antennenrechner both modes still work.
+      NEW: full Bandplan module (3 phases). Please test BOTH backend and frontend.
+      BACKEND (curl/pytest): GET /api/flugfunk/airports?search=EDDM (expect FRANKFURT/MUENCHEN with frequencies),
+      GET /api/flugfunk/frequency?mhz=118.705&country=DE (expect matches incl. MUENCHEN 'TOWER NORTH'). Key is in
+      OPENAIP_API_KEY (backend .env) — must NEVER appear in any frontend file/response beyond the proxied data.
+      FRONTEND (web preview): Hub tile 'tool-tile-bandplan' active -> /bandplan.
+        Phase 1: 'bandplan-check-button' -> Frequenz prüfen. testIDs: freq-check-input, freq-unit-kHz/MHz, freq-detected,
+          freq-result-in (in-band), emcomm-hint (enter 14300 kHz -> EMCOMM box), freq-result-out (enter 27000 kHz -> §16 AFuV text).
+          Band rows: band-row-160m etc -> band detail 'segment-160m-0' with mode/bandwidth/power per class + Quelle footer.
+        Phase 2 CB ('bandplan-cb-button'): tabs cb-tab-channels/check/lookup. Channel list cb-channel-9 shows the
+          'informeller Notrufkanal – keine amtliche Festlegung' text (NOT official emergency). cb-freq-input 27.065 ->
+          cb-check-result 'Kanal 9' with 'AM 4 Watt/FM 4 Watt/SSB 12 Watt'. 26.715 -> Kanal 56 'nur FM'. 27.500 -> cb-check-outside.
+          Lookup: cb-lookup-channel 19 + cb-band-A -> green 'legal in Deutschland'; cb-band-B -> cb-lookup-warn export warning.
+        Phase 3 Flugfunk ('bandplan-flugfunk-button'): ff-tab-airport/frequency. ff-input 'EDDM' + ff-search-button -> ff-results
+          with MUENCHEN frequencies + mandatory disclaimer + 'Daten: OpenAIP (openaip.net)'. ff-tab-frequency 118.705 -> matches.
+      Regression: Morse, Antennenrechner, Rufzeichen tiles still open. (Rufzeichen live lookup remains native-only — not a bug on web.)
