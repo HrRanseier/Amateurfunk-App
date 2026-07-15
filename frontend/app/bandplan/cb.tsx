@@ -25,6 +25,9 @@ import { ScreenHeader } from "@/src/components/ScreenHeader";
 import { fontSize, monoFont, radius, spacing } from "@/src/theme/tokens";
 import { useTheme } from "@/src/theme/useTheme";
 
+const CB_YELLOW_LIGHT = "#FFF59D"; // Kanäle 1–40 (hellgelb)
+const CB_YELLOW_DARK = "#F9A825"; // Kanäle 41–80 (dunkelgelb)
+
 type Tab = "channels" | "check" | "lookup";
 
 export default function CbScreen() {
@@ -123,6 +126,7 @@ export default function CbScreen() {
             <View testID="cb-channel-grid" style={styles.grid}>
               {CB_CHANNELS.map((c) => {
                 const active = selectedCh === c.ch;
+                const chipBg = c.ch <= 40 ? CB_YELLOW_LIGHT : CB_YELLOW_DARK;
                 return (
                   <Pressable
                     key={c.ch}
@@ -138,10 +142,10 @@ export default function CbScreen() {
                     }}
                     style={[
                       styles.chChip,
-                      { backgroundColor: active ? colors.brandPrimary : colors.surfaceSecondary, borderColor: active ? colors.brandPrimary : colors.border },
+                      { backgroundColor: active ? colors.brandPrimary : chipBg, borderColor: active ? colors.brandPrimary : chipBg },
                     ]}
                   >
-                    <Text style={[styles.chChipText, { color: active ? colors.onBrandPrimary : colors.onSurface }]}>{c.ch}</Text>
+                    <Text style={[styles.chChipText, { color: active ? colors.onBrandPrimary : "#1A1A1A" }]}>{c.ch}</Text>
                   </Pressable>
                 );
               })}
