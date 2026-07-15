@@ -145,7 +145,7 @@ export default function AntennaScreen() {
                   inputMode="decimal"
                   placeholder="Sendefrequenz eingeben"
                   placeholderTextColor={colors.onSurfaceMuted}
-                  style={[styles.bigInput, { color: colors.onSurface, borderColor: colors.border, backgroundColor: colors.surface }]}
+                  style={[styles.freqInput, { color: colors.onSurface }]}
                 />
                 <Text style={[styles.unit, { color: colors.brand }]}>MHz</Text>
               </View>
@@ -262,8 +262,6 @@ export default function AntennaScreen() {
                 <Text style={[styles.unit, { color: colors.brand }]}>m</Text>
               </View>
             </View>
-
-            {renderAdvanced()}
           </>
         )}
       </KeyboardAwareScrollView>
@@ -290,6 +288,7 @@ const styles = StyleSheet.create({
 
   resultCard: { borderRadius: radius.lg, borderWidth: 2, padding: spacing.lg, gap: spacing.xs },
   freqCard: { borderRadius: radius.lg, borderWidth: 2, padding: spacing.lg, gap: spacing.sm },
+  freqInput: { flex: 1, height: 48, fontSize: fontSize.xxl, fontFamily: monoFont, paddingVertical: 0 },
   statusWrap: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingVertical: spacing.sm },
   statusText: { flex: 1, fontSize: fontSize.base, fontWeight: "600" },
   resultLabel: { fontSize: fontSize.sm, fontWeight: "700", letterSpacing: 1 },
