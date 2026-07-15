@@ -136,7 +136,7 @@ export function UniversalFreqCheck() {
         </View>
       )}
 
-      {khz != null && !ham && (
+      {khz != null && !ham && !(showCb && cb.legal) && (
         <View testID="freq-afuv" style={[styles.legalBox, { backgroundColor: colors.surface, borderColor: colors.warning, marginTop: spacing.sm }]}>
           <MaterialCommunityIcons name="scale-balance" size={16} color={colors.warning} />
           <View style={styles.flex}>
