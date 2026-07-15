@@ -9,7 +9,6 @@ import {
   BANDS_HINT,
   computeLength,
   DEFAULT_VF,
-  harmonicLabel,
   Lambda,
   LAMBDA_LABEL,
   LENGTH_HINT,
@@ -226,7 +225,7 @@ export default function AntennaScreen() {
                   <View testID="antenna-bands-list" style={styles.bandsList}>
                     {bands.map((h, i) => (
                       <View
-                        key={`${h.band}-${h.harmonic}`}
+                        key={`${h.band}-${h.form}`}
                         testID={`band-hit-${i}`}
                         style={[styles.bandRow, { backgroundColor: colors.surface, borderColor: colors.border }]}
                       >
@@ -235,7 +234,7 @@ export default function AntennaScreen() {
                           <Text style={[styles.bandFreq, { color: colors.onSurface }]}>
                             {h.freqMHz.toFixed(3).replace(".", ",")} MHz
                           </Text>
-                          <Text style={[styles.bandHarm, { color: colors.onSurfaceMuted }]}>{harmonicLabel(h.harmonic)}</Text>
+                          <Text style={[styles.bandHarm, { color: colors.onSurfaceMuted }]}>{h.form}</Text>
                         </View>
                       </View>
                     ))}

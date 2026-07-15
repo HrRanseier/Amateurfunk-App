@@ -1,4 +1,4 @@
-/* Unit test for pure antenna calc logic. Run via tsc (commonjs) + node. */
+/* Unit test for pure antenna calc logic. Run via tsx / ts-node. */
 import { computeLength, resonantBands } from "../src/antenna/antenna";
 
 let pass = 0;
@@ -26,21 +26,28 @@ check("loop ignores VF", computeLength(1, "1/1", "loop", 0.8) === computeLength(
 check("λ/2 @14.2 ~10.04m", near(computeLength(14.2, "1/2", null, 0.95)!, 10.035, 0.01));
 check("invalid freq -> null", computeLength(0, "1/2", null, 0.95) === null);
 
-// --- Reverse: bands ---
-// ~10.03 m half-wave for 20 m: resonant on 20 m (n=1) and 10 m (n=2).
-const b20 = resonantBands(10.03, 0.95);
-const names20 = b20.map((h) => h.band);
-check("10.03m -> 20m present", names20.includes("20 m"), names20.join(","));
-check("10.03m -> 10m present (2nd harmonic)", names20.includes("10 m"), names20.join(","));
+// --- Reverse: bands + antenna forms ---
+// User example: 6.60 m is 5/8 λ for ~26.99 MHz -> 11 m CB band.
+const b660 = resonantBands(6.6, 0.95);
+check("6.60m -> 11m CB present", b660.some((h) => h.band === "11 m (CB)"), b660.map((h) => h.band).join(","));
+check("6.60m -> 11m CB is 5/8 λ", b660.some((h) => h.band === "11 m (CB)" && h.form === "5/8 λ"), b660.map((h) => `${h.band}:${h.form}`).join(","));
 
-// ~20.07 m (40 m half-wave): 40, 20, 15, 10.
-const b40 = resonantBands(20.07, 0.95);
-const names40 = b40.map((h) => h.band);
-check("20.07m -> 40m", names40.includes("40 m"), names40.join(","));
-check("20.07m -> 20m", names40.includes("20 m"), names40.join(","));
-check("20.07m -> 15m", names40.includes("15 m"), names40.join(","));
-check("20.07m -> 10m", names40.includes("10 m"), names40.join(","));
-check("first hit is fundamental n=1", b40.length > 0 && b40[0].harmonic === 1);
+// 20.07 m: λ/4 -> 80 m, λ/2 -> 40 m, 1 λ -> 20 m, plus 15 m & 10 m harmonics.
+const b2007 = resonantBands(20.07, 0.95);
+const names2007 = b2007.map((h) => h.band);
+check("20.07m -> 80m via λ/4", b2007.some((h) => h.band === "80 m" && h.form === "λ/4"), names2007.join(","));
+check("20.07m -> 40m via λ/2", b2007.some((h) => h.band === "40 m" && h.form === "λ/2"));
+check("20.07m -> 20m via 1 λ", b2007.some((h) => h.band === "20 m" && h.form === "1 λ"));
+check("20.07m -> 15m", names2007.includes("15 m"), names2007.join(","));
+check("20.07m -> 10m", names2007.includes("10 m"), names2007.join(","));
+const sortedAsc = b2007.every((h, i) => i === 0 || b2007[i - 1].freqMHz <= h.freqMHz);
+check("hits sorted by frequency asc", sortedAsc);
+
+// 10.03 m half-wave for 20 m: also λ/4 -> 40 m and 1 λ -> 10 m.
+const b1003 = resonantBands(10.03, 0.95);
+const names1003 = b1003.map((h) => h.band);
+check("10.03m -> 20m present", names1003.includes("20 m"), names1003.join(","));
+check("10.03m -> 10m present", names1003.includes("10 m"), names1003.join(","));
 
 check("empty length -> []", resonantBands(0, 0.95).length === 0);
 

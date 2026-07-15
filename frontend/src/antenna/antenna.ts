@@ -17,7 +17,8 @@ export const LENGTH_HINT =
   "Reale Resonanzlänge hängt von Drahtdurchmesser, Isolierung, Montagehöhe und Umgebung ab.";
 
 export const BANDS_HINT =
-  "Näherungswerte. Ein Draht ist resonant, wenn seine Länge einem Vielfachen der halben Wellenlänge entspricht.";
+  "Näherungswerte (Verkürzungsfaktor 0,95). Für die eingegebene Länge werden λ/4, λ/2, 5/8 λ, 1 λ " +
+  "sowie höhere λ/2-Harmonische geprüft. Das CB-/11-m-Band ist enthalten.";
 
 const FRACTION: Record<Lambda, number> = { "1/4": 0.25, "1/2": 0.5, "5/8": 0.625, "1/1": 1.0 };
 
@@ -34,11 +35,11 @@ export function computeLength(
   return (FRACTION[lambda] * 300 * vf) / freqMHz;
 }
 
-// --- Reverse: which amateur bands does a given wire length resonate on? ---
+// --- Reverse: which bands / antenna forms can a given wire length serve? ---
 
 export type Band = { name: string; min: number; max: number };
 
-// IARU Region 1 (Germany) band edges in MHz.
+// IARU Region 1 (Germany) amateur band edges + CB 11 m band, in MHz.
 export const HAM_BANDS: Band[] = [
   { name: "160 m", min: 1.81, max: 2.0 },
   { name: "80 m", min: 3.5, max: 3.8 },
@@ -49,31 +50,47 @@ export const HAM_BANDS: Band[] = [
   { name: "17 m", min: 18.068, max: 18.168 },
   { name: "15 m", min: 21.0, max: 21.45 },
   { name: "12 m", min: 24.89, max: 24.99 },
+  { name: "11 m (CB)", min: 26.965, max: 27.405 },
   { name: "10 m", min: 28.0, max: 29.7 },
   { name: "6 m", min: 50.0, max: 52.0 },
   { name: "2 m", min: 144.0, max: 146.0 },
   { name: "70 cm", min: 430.0, max: 440.0 },
 ];
 
-export type BandHit = { band: string; freqMHz: number; harmonic: number };
+export type BandHit = { band: string; freqMHz: number; form: string };
 
-// A wire is resonant when its length equals n × (λ/2). The harmonic series of
-// resonant frequencies is f_n = n × 150 × VF / L. Report every harmonic that
-// lands inside an amateur band.
+// Each antenna form maps a wire length to a resonant frequency:
+//   f = coeff × VF / L   (coeff = fraction × 300)
+// λ/4 = 75, λ/2 = 150, 5/8 λ = 187.5, 1 λ = 300. Higher λ/2 harmonics are
+// n × 150 (n ≥ 3 → 3×λ/2, 2λ, …). λ/2 (n=1) and 1 λ (n=2) come from the series.
+type Usage = { coeff: number; label: string };
+
+function usages(maxHarmonic: number): Usage[] {
+  const list: Usage[] = [
+    { coeff: 75, label: "λ/4" },
+    { coeff: 187.5, label: "5/8 λ" },
+  ];
+  for (let n = 1; n <= maxHarmonic; n++) {
+    let label: string;
+    if (n === 1) label = "λ/2";
+    else if (n === 2) label = "1 λ";
+    else label = `${n}×λ/2 · ${n}. Harmonische`;
+    list.push({ coeff: n * 150, label });
+  }
+  return list;
+}
+
+// Report every antenna form whose resulting frequency lands inside a band,
+// sorted by frequency ascending.
 export function resonantBands(lengthM: number, vf: number): BandHit[] {
   if (!lengthM || lengthM <= 0) return [];
   const hits: BandHit[] = [];
-  for (let n = 1; n <= 20; n++) {
-    const f = (n * 150 * vf) / lengthM;
-    if (f > 470) break;
+  for (const u of usages(20)) {
+    const f = (u.coeff * vf) / lengthM;
+    if (f <= 0 || f > 470) continue;
     const band = HAM_BANDS.find((b) => f >= b.min && f <= b.max);
-    if (band) hits.push({ band: band.name, freqMHz: f, harmonic: n });
+    if (band) hits.push({ band: band.name, freqMHz: f, form: u.label });
   }
+  hits.sort((a, b) => a.freqMHz - b.freqMHz);
   return hits;
-}
-
-export function harmonicLabel(n: number): string {
-  if (n === 1) return "λ/2 · Grundresonanz";
-  if (n === 2) return "λ · 2. Harmonische";
-  return `${n} × λ/2 · ${n}. Harmonische`;
 }
