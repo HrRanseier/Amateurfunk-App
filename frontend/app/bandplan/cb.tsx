@@ -1,8 +1,8 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useMemo, useRef, useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 
 import {
@@ -56,6 +56,9 @@ export default function CbScreen() {
 
   const back = () => (router.canGoBack() ? router.back() : router.replace("/bandplan"));
 
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollTop = () => scrollRef.current?.scrollTo({ y: 0, animated: true });
+
   const TABS: { id: Tab; label: string }[] = [
     { id: "channels", label: "EU Kanäle" },
     { id: "check", label: "Freq. prüfen" },
@@ -86,6 +89,7 @@ export default function CbScreen() {
       </View>
 
       <KeyboardAwareScrollView
+        ref={scrollRef}
         style={styles.flex}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
@@ -94,32 +98,7 @@ export default function CbScreen() {
       >
         {tab === "channels" && (
           <>
-            <Text style={[styles.helper, { color: colors.onSurfaceMuted }]}>
-              Kanal antippen für Frequenz und Kanalinfo (deutsche/EU-Zuteilung, 80 Kanäle).
-            </Text>
-            <View testID="cb-channel-grid" style={styles.grid}>
-              {CB_CHANNELS.map((c) => {
-                const active = selectedCh === c.ch;
-                return (
-                  <Pressable
-                    key={c.ch}
-                    testID={`cb-channel-${c.ch}`}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      setSelectedCh(active ? null : c.ch);
-                    }}
-                    style={[
-                      styles.chChip,
-                      { backgroundColor: active ? colors.brandPrimary : colors.surfaceSecondary, borderColor: active ? colors.brandPrimary : colors.border },
-                    ]}
-                  >
-                    <Text style={[styles.chChipText, { color: active ? colors.onBrandPrimary : colors.onSurface }]}>{c.ch}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            {selected && (
+            {selected ? (
               <View testID="cb-channel-detail" style={[styles.resultCard, { backgroundColor: colors.surfaceSecondary, borderColor: colors.borderStrong }]}>
                 <Text style={[styles.resultLabel, { color: colors.onSurfaceMuted }]}>KANAL {selected.ch}</Text>
                 <Text style={[styles.resultBig, { color: colors.brand }]}>{formatMHz(selected.freqMHz)} MHz</Text>
@@ -136,7 +115,37 @@ export default function CbScreen() {
                   </View>
                 ) : null}
               </View>
+            ) : (
+              <Text style={[styles.helper, { color: colors.onSurfaceMuted }]}>
+                Kanal antippen für Frequenz und Kanalinfo (deutsche/EU-Zuteilung, 80 Kanäle).
+              </Text>
             )}
+            <View testID="cb-channel-grid" style={styles.grid}>
+              {CB_CHANNELS.map((c) => {
+                const active = selectedCh === c.ch;
+                return (
+                  <Pressable
+                    key={c.ch}
+                    testID={`cb-channel-${c.ch}`}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      if (active) {
+                        setSelectedCh(null);
+                      } else {
+                        setSelectedCh(c.ch);
+                        scrollTop();
+                      }
+                    }}
+                    style={[
+                      styles.chChip,
+                      { backgroundColor: active ? colors.brandPrimary : colors.surfaceSecondary, borderColor: active ? colors.brandPrimary : colors.border },
+                    ]}
+                  >
+                    <Text style={[styles.chChipText, { color: active ? colors.onBrandPrimary : colors.onSurface }]}>{c.ch}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
           </>
         )}
 
@@ -202,6 +211,30 @@ export default function CbScreen() {
 
         {tab === "lookup" && (
           <>
+            {lookupFreq != null && band && (
+              <View testID="cb-lookup-result" style={[styles.resultCard, { backgroundColor: colors.surfaceSecondary, borderColor: colors.borderStrong }]}>
+                <Text style={[styles.resultLabel, { color: colors.onSurfaceMuted }]}>BAND {band} · KANAL {chNum}</Text>
+                <Text style={[styles.resultBig, { color: colors.brand }]}>{formatMHz(lookupFreq)} MHz</Text>
+                {isTripleFive && (
+                  <View testID="cb-triple-five" style={[styles.tripleBox, { backgroundColor: colors.surface, borderColor: colors.warning }]}>
+                    <MaterialCommunityIcons name="star-four-points" size={18} color={colors.warning} />
+                    <Text style={[styles.tripleText, { color: colors.onSurface }]}>{TRIPLE_FIVE_LABEL}</Text>
+                  </View>
+                )}
+                {band === "A" ? (
+                  <View style={[styles.legalBox, { backgroundColor: colors.brandTertiary, borderColor: colors.brand }]}>
+                    <MaterialCommunityIcons name="check-decagram" size={18} color={colors.onBrandTertiary} />
+                    <Text style={[styles.legalText, { color: colors.onBrandTertiary }]}>{CB_BAND_A_OK}</Text>
+                  </View>
+                ) : (
+                  <View testID="cb-lookup-warn" style={[styles.legalBox, { backgroundColor: colors.surface, borderColor: colors.warning }]}>
+                    <MaterialCommunityIcons name="alert" size={18} color={colors.warning} />
+                    <Text style={[styles.legalText, { color: colors.onSurface }]}>{CB_BAND_BJ_WARN}</Text>
+                  </View>
+                )}
+              </View>
+            )}
+
             <View style={[styles.card, { backgroundColor: colors.surfaceSecondary, borderColor: colors.borderStrong }]}>
               <Text style={[styles.fieldLabel, { color: colors.onSurfaceMuted }]}>Band (Export A–J)</Text>
               <View style={styles.bandChips}>
@@ -214,6 +247,7 @@ export default function CbScreen() {
                       onPress={() => {
                         Haptics.selectionAsync();
                         setBand(b);
+                        scrollTop();
                       }}
                       style={[
                         styles.bandChip,
@@ -242,30 +276,6 @@ export default function CbScreen() {
 
             {chNum == null && chText.length > 0 && (
               <Text style={[styles.hintText, { color: colors.warning }]}>Bitte eine Kanalnummer zwischen 1 und 40 eingeben.</Text>
-            )}
-
-            {lookupFreq != null && band && (
-              <View testID="cb-lookup-result" style={[styles.resultCard, { backgroundColor: colors.surfaceSecondary, borderColor: colors.borderStrong }]}>
-                <Text style={[styles.resultLabel, { color: colors.onSurfaceMuted }]}>BAND {band} · KANAL {chNum}</Text>
-                <Text style={[styles.resultBig, { color: colors.brand }]}>{formatMHz(lookupFreq)} MHz</Text>
-                {isTripleFive && (
-                  <View testID="cb-triple-five" style={[styles.tripleBox, { backgroundColor: colors.surface, borderColor: colors.warning }]}>
-                    <MaterialCommunityIcons name="star-four-points" size={18} color={colors.warning} />
-                    <Text style={[styles.tripleText, { color: colors.onSurface }]}>{TRIPLE_FIVE_LABEL}</Text>
-                  </View>
-                )}
-                {band === "A" ? (
-                  <View style={[styles.legalBox, { backgroundColor: colors.brandTertiary, borderColor: colors.brand }]}>
-                    <MaterialCommunityIcons name="check-decagram" size={18} color={colors.onBrandTertiary} />
-                    <Text style={[styles.legalText, { color: colors.onBrandTertiary }]}>{CB_BAND_A_OK}</Text>
-                  </View>
-                ) : (
-                  <View testID="cb-lookup-warn" style={[styles.legalBox, { backgroundColor: colors.surface, borderColor: colors.warning }]}>
-                    <MaterialCommunityIcons name="alert" size={18} color={colors.warning} />
-                    <Text style={[styles.legalText, { color: colors.onSurface }]}>{CB_BAND_BJ_WARN}</Text>
-                  </View>
-                )}
-              </View>
             )}
           </>
         )}
