@@ -61,3 +61,4 @@ Android-App für Amateurfunker. Hub-and-Module-Architektur: zentraler Startbilds
 - [x] Verkürzungsfaktor fixed at DEFAULT_VF = 0.95 (loop uses 306.3/f). **"Erweitert · Verkürzungsfaktor" UI removed** per user request.
 - [x] Frequency field placeholder is "Sendefrequenz eingeben"; **warning shown when frequency typed without a decimal point** (e.g. "14200") asking the user to confirm intent.
 - [x] Unit tests: `scripts/antenna-selftest.ts` → 16/16 pass. Lint clean. UI verified via screenshots (forward result, decimal warning, advanced section gone).
+- [x] **Forward layout reordered:** removed the separate numbered "Sendefrequenz" step card — frequency is now typed directly in the prominent top field (placeholder "Sendefrequenz eingeben", ruler icon + MHz). Order: Frequenz-Feld → Lambda-Anteil → DRAHTLÄNGE result (result card now sits below the lambda selection). Verified via screenshots (empty + 14.200/λ/2 → 10,04 m).

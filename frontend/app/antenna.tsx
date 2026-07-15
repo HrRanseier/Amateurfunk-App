@@ -133,30 +133,10 @@ export default function AntennaScreen() {
       >
         {mode === "forward" ? (
           <>
-            {/* Result — always visible at top */}
-            <View style={[styles.resultCard, { backgroundColor: colors.surfaceSecondary, borderColor: colors.borderStrong }]}>
-              {length == null ? (
-                <View style={styles.statusWrap}>
-                  <MaterialCommunityIcons name="ruler" size={26} color={colors.onSurfaceMuted} />
-                  <Text testID="antenna-result-status" style={[styles.statusText, { color: colors.onSurfaceMuted }]}>
-                    {fwdStatus}
-                  </Text>
-                </View>
-              ) : (
-                <>
-                  <Text style={[styles.resultLabel, { color: colors.onSurfaceMuted }]}>DRAHTLÄNGE</Text>
-                  <Text testID="antenna-result-length" style={[styles.resultBig, { color: colors.brand }]}>
-                    {length.toFixed(2).replace(".", ",")} m
-                  </Text>
-                  <Text style={[styles.disclaimer, { color: colors.onSurfaceMuted }]}>{LENGTH_HINT}</Text>
-                </>
-              )}
-            </View>
-
-            {/* Step 1 — Frequency */}
-            <View style={[styles.card, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
-              {StepHeader("1", "Sendefrequenz")}
+            {/* Frequency — type directly in this field */}
+            <View style={[styles.freqCard, { backgroundColor: colors.surfaceSecondary, borderColor: colors.borderStrong }]}>
               <View style={styles.inputRow}>
+                <MaterialCommunityIcons name="ruler" size={24} color={colors.onSurfaceMuted} />
                 <TextInput
                   testID="antenna-freq-input"
                   value={freqText}
@@ -182,9 +162,9 @@ export default function AntennaScreen() {
               )}
             </View>
 
-            {/* Step 2 — Lambda */}
+            {/* Lambda */}
             <View style={[styles.card, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
-              {StepHeader("2", "Lambda-Anteil")}
+              <Text style={[styles.stepTitle, { color: colors.onSurface }]}>Lambda-Anteil</Text>
               <View style={styles.chipRow}>
                 {LAMBDAS.map((l) =>
                   Chip(LAMBDA_LABEL[l], lambda === l, () => selectLambda(l), `lambda-chip-${l.replace("/", "-")}`),
@@ -197,6 +177,26 @@ export default function AntennaScreen() {
                     {Chip("Gestreckter Draht", oneWhole === "stretched", () => { Haptics.selectionAsync(); setOneWhole("stretched"); }, "onewhole-stretched")}
                     {Chip("Vollwellen-Loop", oneWhole === "loop", () => { Haptics.selectionAsync(); setOneWhole("loop"); }, "onewhole-loop")}
                   </View>
+                </>
+              )}
+            </View>
+
+            {/* Result — below the lambda selection */}
+            <View style={[styles.resultCard, { backgroundColor: colors.surfaceSecondary, borderColor: colors.borderStrong }]}>
+              {length == null ? (
+                <View style={styles.statusWrap}>
+                  <MaterialCommunityIcons name="ruler" size={26} color={colors.onSurfaceMuted} />
+                  <Text testID="antenna-result-status" style={[styles.statusText, { color: colors.onSurfaceMuted }]}>
+                    {fwdStatus}
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  <Text style={[styles.resultLabel, { color: colors.onSurfaceMuted }]}>DRAHTLÄNGE</Text>
+                  <Text testID="antenna-result-length" style={[styles.resultBig, { color: colors.brand }]}>
+                    {length.toFixed(2).replace(".", ",")} m
+                  </Text>
+                  <Text style={[styles.disclaimer, { color: colors.onSurfaceMuted }]}>{LENGTH_HINT}</Text>
                 </>
               )}
             </View>
@@ -289,6 +289,7 @@ const styles = StyleSheet.create({
   segText: { fontSize: fontSize.base, fontWeight: "700" },
 
   resultCard: { borderRadius: radius.lg, borderWidth: 2, padding: spacing.lg, gap: spacing.xs },
+  freqCard: { borderRadius: radius.lg, borderWidth: 2, padding: spacing.lg, gap: spacing.sm },
   statusWrap: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingVertical: spacing.sm },
   statusText: { flex: 1, fontSize: fontSize.base, fontWeight: "600" },
   resultLabel: { fontSize: fontSize.sm, fontWeight: "700", letterSpacing: 1 },
