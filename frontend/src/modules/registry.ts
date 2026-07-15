@@ -29,7 +29,7 @@ export const modules: ToolModule[] = [
     icon: "calculator-variant",
     route: "/antenna",
     enabled: true,
-    subtitle: "Drahtlänge berechnen",
+    subtitle: "Länge \u21C4 Bänder",
   },
   {
     id: "callsign",
