@@ -35,8 +35,9 @@ export const modules: ToolModule[] = [
     id: "callsign",
     title: "Rufzeichen",
     icon: "antenna",
-    enabled: false,
-    subtitle: "Bald verf\u00FCgbar",
+    route: "/callsign",
+    enabled: true,
+    subtitle: "Callbook-Suche",
   },
   {
     id: "bandplan",

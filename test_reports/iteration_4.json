@@ -1,0 +1,24 @@
+{
+  "summary": "Frontend-only validation of the new Rufzeichen (callsign) module + Morse/Antenna regressions on Expo web preview (mobile viewport 375x667). All 7 requested flows pass: callsign tile is ACTIVE (opacity 1, no lock badge) and navigates to the Rufzeichen screen (header 'Rufzeichen' visible in screenshot); callsign-input auto-uppercases 'dl5xyz' -> 'DL5XYZ'; callsign-search-button is disabled when empty (aria-disabled=true, opacity 0.5) and enabled once text is entered (opacity 1); pressing Suchen renders the German testID='callsign-web-notice' with the expected copy ('Die Live-Suche funktioniert nur in der mobilen App ...'), which per the agent-to-agent context is the correct web-preview behaviour; header-back-button returns to hub. Regressions: Morse tile opens the Morse screen; Antenna forward mode with freq=14.200 + lambda-chip-1-2 yields Drahtlänge '10,04 m'; reverse mode with antenna-length-input=20.10 renders antenna-bands-list with 80/40/20/15/10 m entries.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": ["/tmp/callsign_notice.png", "/tmp/antenna_reverse.png"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "callsign.tsx is well-scoped (~340 lines); native-only WebView paths are correctly gated on Platform.OS !== 'web' and the extraction/fallback JS is injected via injectedJavaScript which cannot be validated in the web preview (documented and expected).",
+    "TextInput sanitizer (t.toUpperCase().replace(/[^A-Z0-9/]/g, '')) correctly restricts to A-Z/0-9/ and enforces uppercase — verified live.",
+    "Search button uses Pressable disabled + opacity 0.5 (aria-disabled surfaces on web) — accessible disabled state confirmed."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a", "frontend": "100%"},
+  "seed_data_creation": "None required",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Live HamQTH lookup uses react-native-webview and is NATIVE-ONLY; the web preview correctly shows testID='callsign-web-notice' after pressing Suchen — do NOT treat the absence of Name/QTH result rows as a bug in the web preview. Verify Name/QTH/Country/Grid/CQ/ITU extraction only on Expo Go / native build.",
+  "rca_of_issue": "N/A — no issues found."
+}

@@ -101,3 +101,73 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: |
+  Funk Toolbox — offline amateur-radio toolbox (Expo). Add an ACTIVE "Rufzeichen" (callsign)
+  module replacing the placeholder tile. Screen: callsign input (auto-UPPERCASE) + search button.
+  On search, load hamqth.com/<callsign-lowercase> in a hidden WebView, extract Name, QTH, Country,
+  Grid, CQ zone, ITU zone into a native result card (never show address/birth/license/activity/social/nav).
+  "Callsign not found in the database" -> native "Rufzeichen nicht gefunden". Fallback: visible WebView
+  with injected CSS/JS hiding nav/address/activity/footer. Same theme/light-dark/layout as other modules.
+
+frontend:
+  - task: "Rufzeichen module — hub tile active + navigation"
+    implemented: true
+    working: "NA"
+    file: "app/index.tsx, src/modules/registry.ts"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Registry entry enabled (route /callsign). Hub shows active green tile 'Rufzeichen / Callbook-Suche'. Verified via screenshot."
+  - task: "Rufzeichen screen — input uppercase + search + web-only notice"
+    implemented: true
+    working: "NA"
+    file: "app/callsign.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Input auto-uppercases (dl5xyz->DL5XYZ), search button disabled when empty. On WEB preview the live WebView lookup is NOT available; searching shows a German native-only notice (testID callsign-web-notice). Verified via screenshots."
+  - task: "Rufzeichen live lookup (HamQTH WebView extraction) — NATIVE ONLY"
+    implemented: true
+    working: "NA"
+    file: "app/callsign.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "react-native-webview extraction of 6 fields + notfound + CSS fallback. CANNOT be validated in web preview (cross-origin iframe). Extraction selectors validated OFFLINE against real HamQTH HTML (OK2CQR -> all 6 fields; DL5XYZ -> notfound). Requires Expo Go / build to test live."
+
+metadata:
+  created_by: "main_agent"
+  version: "1.1"
+  test_sequence: 0
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "Rufzeichen module — hub tile active + navigation"
+    - "Rufzeichen screen — input uppercase + search + web-only notice"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+    -agent: "main"
+    -message: |
+      Please test FRONTEND ONLY (web preview). Focus on the new Rufzeichen module UI + no regressions.
+      IMPORTANT: The live HamQTH lookup uses react-native-webview and is NATIVE-ONLY — it does NOT work in
+      the web preview (cross-origin). Do NOT treat missing live callsign data as a bug. In the web preview,
+      pressing Suchen MUST show the German notice with testID 'callsign-web-notice'. Verify:
+      1) Hub tile testID 'tool-tile-callsign' is active and navigates to the Rufzeichen screen.
+      2) 'callsign-input' auto-uppercases typed text; 'callsign-search-button' is disabled when input empty.
+      3) After entering a callsign and pressing search, 'callsign-web-notice' appears.
+      4) Back navigation returns to hub.
+      5) Regression: Morsecode + Antennenrechner tiles still open and Antennenrechner both modes still work.
