@@ -160,7 +160,7 @@ export function checkCbFrequency(mhz: number): CbCheckResult {
 }
 
 export const TRIPLE_FIVE_MHZ = 27.555;
-export const TRIPLE_FIVE_LABEL = "Tripple Five – DX Weltweit, USB, nicht legal";
+export const TRIPLE_FIVE_LABEL = "Tripple Five, DX Weltweit, illegal";
 
 export type ExportRef = { band: CbBandLetter; ch: number; freqMHz: number };
 

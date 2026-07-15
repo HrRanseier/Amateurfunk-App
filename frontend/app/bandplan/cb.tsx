@@ -12,10 +12,14 @@ import {
   CB_CHANNELS,
   CB_NO_CHANNEL,
   CB_OUTSIDE,
+  CB_POWER_1_40,
+  CB_POWER_41_80,
   CbBandLetter,
   cbBandFreq,
   checkCbFrequency,
   formatMHz,
+  TRIPLE_FIVE_LABEL,
+  TRIPLE_FIVE_MHZ,
 } from "@/src/bandplan/cbData";
 import { ScreenHeader } from "@/src/components/ScreenHeader";
 import { fontSize, monoFont, radius, spacing } from "@/src/theme/tokens";
@@ -28,6 +32,10 @@ export default function CbScreen() {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("channels");
 
+  // EU Kanäle (1–80) — Kanal antippen, um Details anzuzeigen
+  const [selectedCh, setSelectedCh] = useState<number | null>(null);
+  const selected = useMemo(() => CB_CHANNELS.find((c) => c.ch === selectedCh) ?? null, [selectedCh]);
+
   // check
   const [freqText, setFreqText] = useState("");
   const mhz = useMemo(() => {
@@ -36,7 +44,7 @@ export default function CbScreen() {
   }, [freqText]);
   const checkResult = useMemo(() => (mhz != null ? checkCbFrequency(mhz) : null), [mhz]);
 
-  // lookup
+  // Export A–J lookup
   const [chText, setChText] = useState("");
   const [band, setBand] = useState<CbBandLetter | null>(null);
   const chNum = useMemo(() => {
@@ -44,13 +52,14 @@ export default function CbScreen() {
     return Number.isInteger(n) && n >= 1 && n <= 40 ? n : null;
   }, [chText]);
   const lookupFreq = useMemo(() => (chNum != null && band ? cbBandFreq(band, chNum) : null), [chNum, band]);
+  const isTripleFive = lookupFreq != null && Math.abs(lookupFreq - TRIPLE_FIVE_MHZ) < 0.0005;
 
   const back = () => (router.canGoBack() ? router.back() : router.replace("/bandplan"));
 
   const TABS: { id: Tab; label: string }[] = [
-    { id: "channels", label: "Kanäle" },
+    { id: "channels", label: "EU Kanäle" },
     { id: "check", label: "Freq. prüfen" },
-    { id: "lookup", label: "Kanal → MHz" },
+    { id: "lookup", label: "Export A–J" },
   ];
 
   return (
@@ -84,23 +93,51 @@ export default function CbScreen() {
         bottomOffset={spacing.xl}
       >
         {tab === "channels" && (
-          <View testID="cb-channel-list" style={styles.list}>
-            {CB_CHANNELS.map((c) => (
-              <View
-                key={c.ch}
-                testID={`cb-channel-${c.ch}`}
-                style={[styles.chRow, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}
-              >
-                <View style={[styles.chBadge, { backgroundColor: colors.brandTertiary }]}>
-                  <Text style={[styles.chBadgeText, { color: colors.onBrandTertiary }]}>{c.ch}</Text>
+          <>
+            <Text style={[styles.helper, { color: colors.onSurfaceMuted }]}>
+              Kanal antippen für Frequenz und Kanalinfo (deutsche/EU-Zuteilung, 80 Kanäle).
+            </Text>
+            <View testID="cb-channel-grid" style={styles.grid}>
+              {CB_CHANNELS.map((c) => {
+                const active = selectedCh === c.ch;
+                return (
+                  <Pressable
+                    key={c.ch}
+                    testID={`cb-channel-${c.ch}`}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setSelectedCh(active ? null : c.ch);
+                    }}
+                    style={[
+                      styles.chChip,
+                      { backgroundColor: active ? colors.brandPrimary : colors.surfaceSecondary, borderColor: active ? colors.brandPrimary : colors.border },
+                    ]}
+                  >
+                    <Text style={[styles.chChipText, { color: active ? colors.onBrandPrimary : colors.onSurface }]}>{c.ch}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {selected && (
+              <View testID="cb-channel-detail" style={[styles.resultCard, { backgroundColor: colors.surfaceSecondary, borderColor: colors.borderStrong }]}>
+                <Text style={[styles.resultLabel, { color: colors.onSurfaceMuted }]}>KANAL {selected.ch}</Text>
+                <Text style={[styles.resultBig, { color: colors.brand }]}>{formatMHz(selected.freqMHz)} MHz</Text>
+                <View style={styles.metaRow}>
+                  <Text style={[styles.metaLabel, { color: colors.onSurfaceMuted }]}>Zulässig</Text>
+                  <Text style={[styles.metaValue, { color: colors.onSurface }]}>
+                    {selected.ch <= 40 ? CB_POWER_1_40 : CB_POWER_41_80}
+                  </Text>
                 </View>
-                <View style={styles.chInfo}>
-                  <Text style={[styles.chFreq, { color: colors.onSurface }]}>{formatMHz(c.freqMHz)} MHz</Text>
-                  {c.note ? <Text style={[styles.chNote, { color: colors.onSurfaceMuted }]}>{c.note}</Text> : null}
-                </View>
+                {selected.note ? (
+                  <View style={styles.metaRow}>
+                    <Text style={[styles.metaLabel, { color: colors.onSurfaceMuted }]}>Hinweis</Text>
+                    <Text style={[styles.metaValue, { color: colors.onSurface }]}>{selected.note}</Text>
+                  </View>
+                ) : null}
               </View>
-            ))}
-          </View>
+            )}
+          </>
         )}
 
         {tab === "check" && (
@@ -166,20 +203,7 @@ export default function CbScreen() {
         {tab === "lookup" && (
           <>
             <View style={[styles.card, { backgroundColor: colors.surfaceSecondary, borderColor: colors.borderStrong }]}>
-              <Text style={[styles.fieldLabel, { color: colors.onSurfaceMuted }]}>Kanalnummer (1–40)</Text>
-              <View style={styles.inputRow}>
-                <TextInput
-                  testID="cb-lookup-channel"
-                  value={chText}
-                  onChangeText={(t) => setChText(t.replace(/[^0-9]/g, "").slice(0, 2))}
-                  keyboardType="number-pad"
-                  inputMode="numeric"
-                  placeholder="z. B. 19"
-                  placeholderTextColor={colors.onSurfaceMuted}
-                  style={[styles.input, { color: colors.onSurface }]}
-                />
-              </View>
-              <Text style={[styles.fieldLabel, { color: colors.onSurfaceMuted, marginTop: spacing.sm }]}>Band</Text>
+              <Text style={[styles.fieldLabel, { color: colors.onSurfaceMuted }]}>Band (Export A–J)</Text>
               <View style={styles.bandChips}>
                 {CB_BAND_LETTERS.map((b) => {
                   const active = band === b;
@@ -201,6 +225,19 @@ export default function CbScreen() {
                   );
                 })}
               </View>
+              <Text style={[styles.fieldLabel, { color: colors.onSurfaceMuted, marginTop: spacing.md }]}>Kanalnummer (1–40)</Text>
+              <View style={styles.inputRow}>
+                <TextInput
+                  testID="cb-lookup-channel"
+                  value={chText}
+                  onChangeText={(t) => setChText(t.replace(/[^0-9]/g, "").slice(0, 2))}
+                  keyboardType="number-pad"
+                  inputMode="numeric"
+                  placeholder="z. B. 19"
+                  placeholderTextColor={colors.onSurfaceMuted}
+                  style={[styles.input, { color: colors.onSurface }]}
+                />
+              </View>
             </View>
 
             {chNum == null && chText.length > 0 && (
@@ -211,6 +248,12 @@ export default function CbScreen() {
               <View testID="cb-lookup-result" style={[styles.resultCard, { backgroundColor: colors.surfaceSecondary, borderColor: colors.borderStrong }]}>
                 <Text style={[styles.resultLabel, { color: colors.onSurfaceMuted }]}>BAND {band} · KANAL {chNum}</Text>
                 <Text style={[styles.resultBig, { color: colors.brand }]}>{formatMHz(lookupFreq)} MHz</Text>
+                {isTripleFive && (
+                  <View testID="cb-triple-five" style={[styles.tripleBox, { backgroundColor: colors.surface, borderColor: colors.warning }]}>
+                    <MaterialCommunityIcons name="star-four-points" size={18} color={colors.warning} />
+                    <Text style={[styles.tripleText, { color: colors.onSurface }]}>{TRIPLE_FIVE_LABEL}</Text>
+                  </View>
+                )}
                 {band === "A" ? (
                   <View style={[styles.legalBox, { backgroundColor: colors.brandTertiary, borderColor: colors.brand }]}>
                     <MaterialCommunityIcons name="check-decagram" size={18} color={colors.onBrandTertiary} />
@@ -248,13 +291,10 @@ const styles = StyleSheet.create({
   segBtn: { flex: 1, paddingVertical: spacing.sm, borderRadius: radius.sm, alignItems: "center", justifyContent: "center" },
   segText: { fontSize: fontSize.base, fontWeight: "700" },
 
-  list: { gap: spacing.sm },
-  chRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, borderRadius: radius.md, borderWidth: 1, padding: spacing.sm },
-  chBadge: { width: 40, height: 40, borderRadius: radius.sm, alignItems: "center", justifyContent: "center" },
-  chBadgeText: { fontSize: fontSize.lg, fontWeight: "800", fontFamily: monoFont },
-  chInfo: { flex: 1 },
-  chFreq: { fontSize: fontSize.lg, fontWeight: "700", fontFamily: monoFont },
-  chNote: { fontSize: fontSize.sm, fontWeight: "600", marginTop: 2, lineHeight: 17 },
+  helper: { fontSize: fontSize.sm, fontWeight: "600", lineHeight: 18, marginBottom: spacing.xs },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  chChip: { width: 46, height: 46, borderRadius: radius.md, borderWidth: 2, alignItems: "center", justifyContent: "center" },
+  chChipText: { fontSize: fontSize.lg, fontWeight: "800", fontFamily: monoFont },
 
   card: { borderRadius: radius.lg, borderWidth: 2, padding: spacing.lg, gap: spacing.sm },
   fieldLabel: { fontSize: fontSize.sm, fontWeight: "700" },
@@ -284,4 +324,6 @@ const styles = StyleSheet.create({
 
   legalBox: { flexDirection: "row", gap: spacing.sm, borderRadius: radius.md, borderWidth: 1, padding: spacing.md, marginTop: spacing.xs },
   legalText: { flex: 1, fontSize: fontSize.sm, lineHeight: 18, fontWeight: "600" },
+  tripleBox: { flexDirection: "row", alignItems: "center", gap: spacing.sm, borderRadius: radius.md, borderWidth: 1, padding: spacing.md, marginTop: spacing.xs },
+  tripleText: { flex: 1, fontSize: fontSize.base, fontWeight: "800" },
 });

@@ -1,11 +1,13 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 
-import { BANDS, MAIN_DISCLAIMER } from "@/src/bandplan/data";
+import { MAIN_DISCLAIMER } from "@/src/bandplan/data";
+import { UniversalFreqCheck } from "@/src/bandplan/UniversalFreqCheck";
 import { ScreenHeader } from "@/src/components/ScreenHeader";
-import { fontSize, monoFont, radius, spacing } from "@/src/theme/tokens";
+import { fontSize, radius, spacing } from "@/src/theme/tokens";
 import { useTheme } from "@/src/theme/useTheme";
 
 export default function BandplanScreen() {
@@ -24,48 +26,38 @@ export default function BandplanScreen() {
         onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))}
       />
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Frequenz prüfen — prominent */}
+      <KeyboardAwareScrollView
+        style={styles.flex}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        bottomOffset={spacing.xl}
+      >
+        {/* Universelles Frequenz prüfen — Amateurfunk + CB (inkl. Export A–J) */}
+        <UniversalFreqCheck />
+
+        <Text style={[styles.sectionLabel, { color: colors.onSurfaceMuted }]}>BEREICHE</Text>
+
+        {/* Amateurfunk — oben, volle Breite */}
         <Pressable
-          testID="bandplan-check-button"
-          onPress={() => go("/bandplan/check")}
+          testID="bandplan-amateur-button"
+          onPress={() => go("/bandplan/amateur")}
           style={({ pressed }) => [
-            styles.checkBtn,
-            { backgroundColor: colors.brandPrimary, opacity: pressed ? 0.85 : 1 },
+            styles.amateurBtn,
+            { backgroundColor: colors.surfaceSecondary, borderColor: colors.borderStrong, opacity: pressed ? 0.85 : 1 },
           ]}
         >
-          <MaterialCommunityIcons name="magnify-scan" size={24} color={colors.onBrandPrimary} />
-          <View style={styles.checkTextWrap}>
-            <Text style={[styles.checkTitle, { color: colors.onBrandPrimary }]}>Frequenz prüfen</Text>
-            <Text style={[styles.checkSub, { color: colors.onBrandPrimary }]}>Amateurfunk-Zuweisung abgleichen</Text>
+          <View style={[styles.amateurIcon, { backgroundColor: colors.brandTertiary }]}>
+            <MaterialCommunityIcons name="radio-tower" size={30} color={colors.onBrandTertiary} />
           </View>
-          <MaterialCommunityIcons name="chevron-right" size={24} color={colors.onBrandPrimary} />
+          <View style={styles.amateurInfo}>
+            <Text style={[styles.amateurTitle, { color: colors.onSurface }]}>Amateurfunk</Text>
+            <Text style={[styles.amateurSub, { color: colors.onSurfaceMuted }]}>KW-Bänder & Segmente</Text>
+          </View>
+          <MaterialCommunityIcons name="chevron-right" size={24} color={colors.onSurfaceMuted} />
         </Pressable>
 
-        <Text style={[styles.sectionLabel, { color: colors.onSurfaceMuted }]}>KURZWELLEN-BÄNDER</Text>
-
-        {BANDS.map((band) => (
-          <Pressable
-            key={band.id}
-            testID={`band-row-${band.id}`}
-            onPress={() => go(`/bandplan/band?id=${band.id}`)}
-            style={({ pressed }) => [
-              styles.bandRow,
-              { backgroundColor: colors.surfaceSecondary, borderColor: colors.border, opacity: pressed ? 0.85 : 1 },
-            ]}
-          >
-            <View style={[styles.bandBadge, { backgroundColor: colors.brandTertiary }]}>
-              <Text style={[styles.bandBadgeText, { color: colors.onBrandTertiary }]}>{band.short}</Text>
-            </View>
-            <View style={styles.bandInfo}>
-              <Text style={[styles.bandName, { color: colors.onSurface }]}>{band.name}</Text>
-              <Text style={[styles.bandRange, { color: colors.onSurfaceMuted }]}>{band.range}</Text>
-            </View>
-            <MaterialCommunityIcons name="chevron-right" size={22} color={colors.onSurfaceMuted} />
-          </Pressable>
-        ))}
-
-        {/* Sub-areas */}
+        {/* CB-Funk & Flugfunk — darunter */}
         <View style={styles.subRow}>
           <Pressable
             testID="bandplan-cb-button"
@@ -94,44 +86,32 @@ export default function BandplanScreen() {
         </View>
 
         <Text style={[styles.disclaimer, { color: colors.onSurfaceMuted }]}>{MAIN_DISCLAIMER}</Text>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  flex: { flex: 1 },
   content: { padding: spacing.lg, paddingBottom: spacing.xxxl, gap: spacing.sm },
 
-  checkBtn: {
+  sectionLabel: { fontSize: fontSize.sm, fontWeight: "800", letterSpacing: 1, marginTop: spacing.md, marginBottom: spacing.xs },
+
+  amateurBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
     borderRadius: radius.lg,
+    borderWidth: 2,
     padding: spacing.lg,
-    marginBottom: spacing.sm,
   },
-  checkTextWrap: { flex: 1 },
-  checkTitle: { fontSize: fontSize.lg, fontWeight: "800" },
-  checkSub: { fontSize: fontSize.sm, fontWeight: "600", marginTop: 2, opacity: 0.9 },
+  amateurIcon: { width: 54, height: 54, borderRadius: radius.md, alignItems: "center", justifyContent: "center" },
+  amateurInfo: { flex: 1 },
+  amateurTitle: { fontSize: fontSize.xl, fontWeight: "800" },
+  amateurSub: { fontSize: fontSize.sm, fontWeight: "600", marginTop: 2 },
 
-  sectionLabel: { fontSize: fontSize.sm, fontWeight: "800", letterSpacing: 1, marginTop: spacing.md, marginBottom: spacing.xs },
-
-  bandRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    padding: spacing.md,
-  },
-  bandBadge: { minWidth: 62, height: 40, borderRadius: radius.sm, alignItems: "center", justifyContent: "center", paddingHorizontal: spacing.sm },
-  bandBadgeText: { fontSize: fontSize.base, fontWeight: "800", fontFamily: monoFont },
-  bandInfo: { flex: 1 },
-  bandName: { fontSize: fontSize.lg, fontWeight: "700" },
-  bandRange: { fontSize: fontSize.sm, fontWeight: "600", marginTop: 2, fontFamily: monoFont },
-
-  subRow: { flexDirection: "row", gap: spacing.md, marginTop: spacing.md },
+  subRow: { flexDirection: "row", gap: spacing.md, marginTop: spacing.xs },
   subBtn: { flex: 1, borderRadius: radius.lg, borderWidth: 2, padding: spacing.lg, alignItems: "center", gap: 2 },
   subEmoji: { fontSize: 30, marginBottom: spacing.xs },
   subText: { fontSize: fontSize.lg, fontWeight: "800" },

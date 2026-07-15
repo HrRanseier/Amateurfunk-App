@@ -1,0 +1,23 @@
+{
+  "summary": "Frontend-only regression of the refactored Bandplan module on Expo web preview (390x844 mobile viewport). All 10 scenarios from the review request passed. The universal Frequenz prüfen at the top of /bandplan correctly identifies both Amateurfunk (14300 kHz -> 20 m + IARU emcomm hint) and CB (27.065 MHz -> Kanal 9 legal, 27.555 MHz -> Kanal 12 · Band B + 'Tripple Five, DX Weltweit, illegal' + Export-Warnhinweis). Hub tiles (Amateurfunk full-width, CB-Funk + Flugfunk row) route to /bandplan/amateur, /bandplan/cb, /bandplan/flugfunk. /bandplan/amateur exposes the band list (band-row-160m navigates to detail with segment-160m-0 visible) and 'Frequenz prüfen' still routes to /bandplan/check. CB screen shows three tabs (EU Kanäle, Freq. prüfen, Export A–J): channel grid works (CH9 -> 27,065 MHz with AM/FM/SSB power + Notruf-Hinweis; CH56 -> 26,715 MHz nur FM Datenkanal); Freq. prüfen (27.065 -> Kanal 9, 27.500 -> außerhalb); Export A–J (Band B + 12 -> 27,555 MHz + Tripple-Five + warn; Band A + 19 -> legal green; Band B + 19 -> warn). Regression: /morse, /antenna, /callsign hub links still open. No deprecated packages, red-screen errors, or console errors observed during the flows.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": ["/app/test_reports/iteration_6.json"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "UniversalFreqCheck: when a CB frequency matches (e.g., 27.065), the fallback AFuV outside-warning box (testID freq-afuv) is still rendered because it only checks !ham. This may confuse users on legal CB frequencies. Consider hiding freq-afuv when showCb && cb.legal is true.",
+    "cbData.ts uses 'Tripple' (double p) intentionally per user spec — keep as-is; already matches tests."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a", "frontend": "100%"},
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Bandplan refactor verified on web preview at https://funk-toolbox.preview.emergentagent.com. Routes: /bandplan (hub with UniversalFreqCheck), /bandplan/amateur (band list + check button), /bandplan/cb (3-tab screen: channels/check/lookup), /bandplan/check (amateur-only checker), /bandplan/flugfunk, /bandplan/band?id=<band>. Key testIDs: freq-check-input, freq-unit-kHz, freq-unit-MHz, freq-result-ham, freq-result-cb, emcomm-hint, bandplan-amateur-button, bandplan-cb-button, bandplan-flugfunk-button, bandplan-check-button, band-row-<id>, segment-<id>-<i>, cb-tab-channels|check|lookup, cb-channel-grid, cb-channel-<n>, cb-channel-detail, cb-freq-input, cb-check-result, cb-check-outside, cb-band-<A..J>, cb-lookup-channel, cb-lookup-result, cb-lookup-warn, cb-triple-five. Rufzeichen HamQTH lookup + Morse audio remain native-only per agent-to-agent note.",
+  "rca_of_issue": "n/a — no bugs reproduced this iteration."
+}

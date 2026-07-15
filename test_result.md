@@ -150,6 +150,39 @@ frontend:
         -working: "NA"
         -agent: "main"
         -comment: "react-native-webview extraction of 6 fields + notfound + CSS fallback. CANNOT be validated in web preview (cross-origin iframe). Extraction selectors validated OFFLINE against real HamQTH HTML (OK2CQR -> all 6 fields; DL5XYZ -> notfound). Requires Expo Go / build to test live."
+  - task: "Bandplan hub refactor — embedded UniversalFreqCheck + tile layout (Amateurfunk top, CB/Flugfunk below)"
+    implemented: true
+    working: "NA"
+    file: "app/bandplan/index.tsx, src/bandplan/UniversalFreqCheck.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Hub now shows embedded 'Frequenz prüfen' (testID freq-check-input, freq-unit-kHz/MHz, freq-detected) that identifies BOTH Amateur and CB. Tiles: bandplan-amateur-button (full-width, top), bandplan-cb-button + bandplan-flugfunk-button (row below). 27.555 MHz -> freq-result-cb with 'Tripple Five, DX Weltweit, illegal' + 'Kanal 12 · Band B' export warning. 14300 kHz -> freq-result-ham + emcomm-hint. 27065 -> CB Kanal 9. Verified via screenshot."
+  - task: "Bandplan Amateurfunk subpage — KW band list moved from hub"
+    implemented: true
+    working: "NA"
+    file: "app/bandplan/amateur.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "New /bandplan/amateur screen: 'Frequenz prüfen' button (bandplan-check-button -> /bandplan/check kept) + KURZWELLEN-BÄNDER rows (band-row-160m etc -> /bandplan/band?id=)."
+  - task: "Bandplan CB screen refactor — EU Kanäle grid + Export A–J + Tripple Five"
+    implemented: true
+    working: "NA"
+    file: "app/bandplan/cb.tsx, src/bandplan/cbData.ts"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Tabs renamed: 'EU Kanäle' (cb-channel-grid: tap cb-channel-9 -> cb-channel-detail with freq + power + note), 'Freq. prüfen' (unchanged, cb-freq-input), 'Export A–J' (cb-tab-lookup: band chips cb-band-A..J FIRST then cb-lookup-channel input; Band A -> green legal, B-J -> cb-lookup-warn; Band B ch12 = 27.555 -> cb-triple-five 'Tripple Five, DX Weltweit, illegal')."
 
 metadata:
   created_by: "main_agent"
@@ -172,9 +205,9 @@ backend:
 
 test_plan:
   current_focus:
-    - "Bandplan main + band detail + Frequenz prüfen (Amateur)"
-    - "CB-Funk: Kanäle, Frequenz prüfen, Kanal→Frequenz A–J"
-    - "Flugfunk OpenAIP proxy — airport search + reverse frequency lookup"
+    - "Bandplan hub refactor — embedded UniversalFreqCheck + tile layout (Amateurfunk top, CB/Flugfunk below)"
+    - "Bandplan Amateurfunk subpage — KW band list moved from hub"
+    - "Bandplan CB screen refactor — EU Kanäle grid + Export A–J + Tripple Five"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -182,7 +215,20 @@ test_plan:
 agent_communication:
     -agent: "main"
     -message: |
-      NEW: full Bandplan module (3 phases). Please test BOTH backend and frontend.
+      BANDPLAN REFACTOR (frontend only, web preview). Test on /bandplan:
+      1) HUB: embedded 'Frequenz prüfen' at top (freq-check-input + freq-unit-kHz/MHz). Enter 14300 kHz -> freq-result-ham (20m) + emcomm-hint.
+         Enter 27.555 MHz -> freq-result-cb showing 'Tripple Five, DX Weltweit, illegal' + 'Kanal 12 · Band B' + export warning.
+         Enter 27.065 MHz -> freq-result-cb 'Kanal 9'. Tiles: bandplan-amateur-button (full width) -> /bandplan/amateur; bandplan-cb-button; bandplan-flugfunk-button.
+      2) AMATEUR SUBPAGE (/bandplan/amateur): bandplan-check-button -> /bandplan/check (still works). band-row-160m etc -> band detail.
+      3) CB (/bandplan/cb): tabs 'EU Kanäle'(cb-tab-channels), 'Freq. prüfen'(cb-tab-check), 'Export A–J'(cb-tab-lookup).
+         EU Kanäle: cb-channel-grid, tap cb-channel-9 -> cb-channel-detail (freq 27,065 MHz + power + Notrufkanal note). Tap cb-channel-56 -> 'nur FM'.
+         Export A–J: cb-band-B selected FIRST then cb-lookup-channel '12' -> cb-lookup-result + cb-triple-five 'Tripple Five, DX Weltweit, illegal'. cb-band-A + '19' -> green legal. cb-band-B + '19' -> cb-lookup-warn.
+         Freq. prüfen tab unchanged: cb-freq-input 27.065 -> Kanal 9.
+      Regression: Morse, Antennenrechner, Rufzeichen hub tiles still open. (Rufzeichen live lookup native-only — not a bug on web.)
+
+    -agent: "main"
+    -message: |
+      (Earlier) full Bandplan module (3 phases). Backend + frontend.
       BACKEND (curl/pytest): GET /api/flugfunk/airports?search=EDDM (expect FRANKFURT/MUENCHEN with frequencies),
       GET /api/flugfunk/frequency?mhz=118.705&country=DE (expect matches incl. MUENCHEN 'TOWER NORTH'). Key is in
       OPENAIP_API_KEY (backend .env) — must NEVER appear in any frontend file/response beyond the proxied data.
