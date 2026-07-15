@@ -51,3 +51,11 @@ export function segmentRange(segment: Segment): string {
     ? `${fmt(segment.from)} kHz`
     : `${fmt(segment.from)} – ${fmt(segment.to)} kHz`;
 }
+
+// Allowed license classes derived purely from the stored power data.
+export function licenseClasses(power?: PowerByClass): string | null {
+  if (!power) return null;
+  if (power.flat) return "alle Klassen";
+  const cls = [power.A ? "A" : null, power.E ? "E" : null, power.N ? "N" : null].filter(Boolean);
+  return cls.length ? cls.join(", ") : null;
+}

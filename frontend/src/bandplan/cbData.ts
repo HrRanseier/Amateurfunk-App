@@ -159,4 +159,54 @@ export function checkCbFrequency(mhz: number): CbCheckResult {
   return { kind: "no-channel" };
 }
 
+export const TRIPLE_FIVE_MHZ = 27.555;
+export const TRIPLE_FIVE_LABEL = "Tripple Five – DX Weltweit, USB, nicht legal";
+
+export type ExportRef = { band: CbBandLetter; ch: number; freqMHz: number };
+
+// The A–J export grid is disjoint, so a frequency maps to at most one (band, ch).
+export function findExportRef(mhz: number): ExportRef | null {
+  for (const band of CB_BAND_LETTERS) {
+    for (let ch = 1; ch <= 40; ch++) {
+      const fr = cbBandFreq(band, ch);
+      if (fr != null && Math.abs(fr - mhz) < 0.0005) return { band, ch, freqMHz: fr };
+    }
+  }
+  return null;
+}
+
+export function findGermanChannel(mhz: number): CbChannel | null {
+  return CB_CHANNELS.find((c) => Math.abs(c.freqMHz - mhz) < 0.0005) ?? null;
+}
+
+export type CbIdentity = {
+  tripleFive: boolean;
+  german: CbChannel | null; // legal German channel (1–80) if any
+  exportRef: ExportRef | null; // A–J grid reference if any
+  power: string | null; // power/mode string when legal
+  legal: boolean;
+};
+
+export function identifyCb(mhz: number): CbIdentity {
+  const tripleFive = Math.abs(mhz - TRIPLE_FIVE_MHZ) < 0.0005;
+  const german = findGermanChannel(mhz);
+  const exportRef = findExportRef(mhz);
+  return {
+    tripleFive,
+    german,
+    exportRef,
+    power: german ? (german.ch <= 40 ? CB_POWER_1_40 : CB_POWER_41_80) : null,
+    legal: german != null,
+  };
+}
+
+export function hasCb(id: CbIdentity): boolean {
+  return id.tripleFive || id.german != null || id.exportRef != null;
+}
+
+// German channel (1–80) -> frequency + note (used by the "EU Kanäle" lookup).
+export function germanChannelByNumber(ch: number): CbChannel | null {
+  return CB_CHANNELS.find((c) => c.ch === ch) ?? null;
+}
+
 export const formatMHz = (n: number) => n.toFixed(3).replace(".", ",");
