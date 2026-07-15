@@ -45,11 +45,24 @@ export function powerRows(power?: PowerByClass): { label: string; value: string 
 }
 
 // Human range label for a segment (single spot freq vs range), German comma.
-export function segmentRange(segment: Segment): string {
+export function segmentRange(segment: Segment, unit: "kHz" | "MHz" = "kHz"): string {
+  if (unit === "MHz") {
+    const f = (n: number) => (n / 1000).toFixed(3).replace(".", ",");
+    return segment.from === segment.to ? `${f(segment.from)} MHz` : `${f(segment.from)} – ${f(segment.to)} MHz`;
+  }
   const fmt = (n: number) => String(n).replace(".", ",");
   return segment.from === segment.to
     ? `${fmt(segment.from)} kHz`
     : `${fmt(segment.from)} – ${fmt(segment.to)} kHz`;
+}
+
+// Bandwidth label: Hz for narrow (HF) segments, kHz for wide (VHF/UHF) ones.
+export function formatBandwidth(bwHz: number): string {
+  if (bwHz >= 10000) {
+    const k = bwHz / 1000;
+    return `${String(Number.isInteger(k) ? k : +k.toFixed(1)).replace(".", ",")} kHz`;
+  }
+  return `${bwHz} Hz`;
 }
 
 // Allowed license classes derived purely from the stored power data.

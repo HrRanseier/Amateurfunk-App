@@ -3,7 +3,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { getBand, SOURCE_NOTE } from "@/src/bandplan/data";
-import { powerRows, segmentRange } from "@/src/bandplan/frequency";
+import { formatBandwidth, powerRows, segmentRange } from "@/src/bandplan/frequency";
 import { ScreenHeader } from "@/src/components/ScreenHeader";
 import { fontSize, monoFont, radius, spacing } from "@/src/theme/tokens";
 import { useTheme } from "@/src/theme/useTheme";
@@ -45,7 +45,7 @@ export default function BandDetailScreen() {
               style={[styles.card, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}
             >
               <View style={styles.cardTop}>
-                <Text style={[styles.range, { color: colors.brand }]}>{segmentRange(seg)}</Text>
+                <Text style={[styles.range, { color: colors.brand }]}>{segmentRange(seg, band.unit)}</Text>
                 {seg.alloc ? (
                   <View style={[styles.allocBadge, { backgroundColor: colors.surfaceTertiary }]}>
                     <Text style={[styles.allocText, { color: colors.onSurfaceSecondary }]}>{seg.alloc}</Text>
@@ -71,7 +71,7 @@ export default function BandDetailScreen() {
                 <View style={styles.metaRow}>
                   <MaterialCommunityIcons name="arrow-expand-horizontal" size={16} color={colors.onSurfaceMuted} />
                   <Text style={[styles.metaLabel, { color: colors.onSurfaceMuted }]}>Max. Bandbreite</Text>
-                  <Text style={[styles.metaValue, { color: colors.onSurface }]}>{seg.bwHz} Hz</Text>
+                  <Text style={[styles.metaValue, { color: colors.onSurface }]}>{formatBandwidth(seg.bwHz)}</Text>
                 </View>
               ) : null}
 

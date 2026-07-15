@@ -1,0 +1,70 @@
+{
+  "summary": "Frontend-only verification of VHF/UHF bandplan additions (23cm, 70cm, 2m, 6m), removal of 2200m/600m, reorder starting with 10m, and MHz display for VHF/UHF bands. All 8 requested test cases pass. Amateur list, per-band detail pages, Hub Universal Frequency Check, amateur-only /bandplan/check, HF regressions and CB Triple Five all behave exactly as specified.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": ["/app/test_reports/iteration_7.json"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "data.ts is approaching ~250 lines with rich literal segments; consider splitting per-band files if it grows further (not needed now).",
+    "segmentRange MHz formatting uses toFixed(3) which always shows three decimals for VHF/UHF ranges (e.g. '144,000 – 144,110 MHz'). This is consistent and readable, no change needed, just noting the intentional trailing zeros."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a", "frontend": "100%"},
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Bandplan hub, amateur list, per-band detail (HF kHz + VHF/UHF MHz), universal Frequenz prüfen and amateur-only /bandplan/check all verified on mobile viewport 390x844 via the public EXPO URL. Deprecated packages / SafeAreaView not flagged this run — none affect the tested screens. Morse audio and Rufzeichen live lookup remain native-only per E1 note.",
+  "detailed_results": {
+    "amateur_list": {
+      "order_ok": true,
+      "dom_order": ["band-row-10m","band-row-12m","band-row-15m","band-row-17m","band-row-20m","band-row-30m","band-row-40m","band-row-60m","band-row-80m","band-row-160m","band-row-23cm","band-row-70cm","band-row-2m","band-row-6m"],
+      "removed_2200m": true,
+      "removed_600m": true
+    },
+    "band_2m": {
+      "range_header": "144 – 146 MHz",
+      "segment_ranges_in_MHz": true,
+      "ssb_calling_144_300": true,
+      "power_A_750W_E_75W": true,
+      "wide_segment_20kHz": true,
+      "narrow_segment_500Hz": true,
+      "sample_wide": "145,194 – 145,594 MHz · 12,5 kHz"
+    },
+    "band_23cm": {
+      "range_header": "1240 – 1300 MHz",
+      "cw_ssb_spot_1296_000_1296_200": true,
+      "satellite_segment_1260_1270": true,
+      "bandwidth_kHz_where_applicable": true
+    },
+    "band_6m": {
+      "range_header": "50 – 52 MHz",
+      "ssb_calling_50_150": true,
+      "power_750W_lower": true,
+      "power_25W_upper": true
+    },
+    "hub_universal_check": {
+      "145.500_MHz": "2 Meter · 145,194 – 145,594 MHz · FM-Simplex (auch DV)",
+      "432.200_MHz": "70 Zentimeter · 432,100 – 432,400 MHz · SSB-Anruf",
+      "1296.200_MHz": "23 Zentimeter · 1296,000 – 1297,000 MHz · CW/EME · SSB · Schmalband",
+      "50.150_MHz": "6 Meter · 50,100 – 50,300 MHz · SSB-Anruf",
+      "14300_kHz": "20 Meter · emcomm-hint present",
+      "7110_kHz": "40 Meter · emcomm-hint present",
+      "27.555_MHz_CB": "Tripple Five, DX Weltweit, illegal · Kanal 12 · Band B",
+      "40_MHz_outside": "freq-afuv shown with AFuV § 16 Abs. 9"
+    },
+    "amateur_only_check": {
+      "145.500_MHz": "freq-result-in: 2 Meter · 145,194 – 145,594 MHz · Bandbreite 12,5 kHz",
+      "40_MHz": "freq-result-out: außerhalb der Amateurfunk-Zuweisung"
+    },
+    "hf_regression_10m": {
+      "range_still_kHz": "28000 – 29700 kHz",
+      "segments_in_kHz": true,
+      "no_MHz_leaked": true
+    }
+  }
+}

@@ -40,7 +40,7 @@ export default function AmateurScreen() {
           <MaterialCommunityIcons name="chevron-right" size={24} color={colors.onBrandPrimary} />
         </Pressable>
 
-        <Text style={[styles.sectionLabel, { color: colors.onSurfaceMuted }]}>KURZWELLEN-BÄNDER</Text>
+        <Text style={[styles.sectionLabel, { color: colors.onSurfaceMuted }]}>BÄNDER</Text>
 
         {BANDS.map((band) => (
           <Pressable

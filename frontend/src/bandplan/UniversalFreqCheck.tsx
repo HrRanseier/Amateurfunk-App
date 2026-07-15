@@ -14,6 +14,7 @@ import {
 } from "@/src/bandplan/cbData";
 import {
   findHamSegment,
+  formatBandwidth,
   isEmcomm,
   licenseClasses,
   parseFrequencyKHz,
@@ -73,11 +74,11 @@ export function UniversalFreqCheck() {
         <View testID="freq-result-ham" style={[styles.section, { borderColor: colors.border }]}>
           <SectionHead icon="radio-tower" label="AMATEURFUNK" colors={colors} />
           <Text style={[styles.resultTitle, { color: colors.onSurface }]}>
-            {ham.band.name} · {segmentRange(ham.segment)}
+            {ham.band.name} · {segmentRange(ham.segment, ham.band.unit)}
           </Text>
           <Row label="Sendeart" value={ham.segment.mode} colors={colors} />
           {ham.segment.recommended ? <Row label="Rufwelle" value={ham.segment.recommended} colors={colors} /> : null}
-          {ham.segment.bwHz != null ? <Row label="Bandbreite" value={`${ham.segment.bwHz} Hz`} colors={colors} /> : null}
+          {ham.segment.bwHz != null ? <Row label="Bandbreite" value={formatBandwidth(ham.segment.bwHz)} colors={colors} /> : null}
           {powerRows(ham.segment.power).map((r) => (
             <Row key={r.label} label={r.label} value={r.value} colors={colors} />
           ))}

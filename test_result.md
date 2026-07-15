@@ -183,6 +183,17 @@ frontend:
         -working: "NA"
         -agent: "main"
         -comment: "Tabs renamed: 'EU Kanäle' (cb-channel-grid: tap cb-channel-9 -> cb-channel-detail with freq + power + note), 'Freq. prüfen' (unchanged, cb-freq-input), 'Export A–J' (cb-tab-lookup: band chips cb-band-A..J FIRST then cb-lookup-channel input; Band A -> green legal, B-J -> cb-lookup-warn; Band B ch12 = 27.555 -> cb-triple-five 'Tripple Five, DX Weltweit, illegal')."
+  - task: "Amateurfunk bands — remove 2200m/600m, reorder (10m first), add 23cm/70cm/2m/6m + integrate into Frequenz prüfen"
+    implemented: true
+    working: "NA"
+    file: "src/bandplan/data.ts, src/bandplan/frequency.ts, app/bandplan/amateur.tsx, app/bandplan/band.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "data.ts BANDS reordered: 10m,12m,15m,17m,20m,30m,40m,60m,80m,160m,23cm,70cm,2m,6m (2200m & 600m removed). New VHF/UHF bands carry unit:'MHz' so segmentRange renders MHz; formatBandwidth() shows kHz for >=10kHz segments. findHamSegment now identifies VHF/UHF on hub 'Frequenz prüfen' AND /bandplan/check. Unit test scripts/bandplan-selftest.ts: 21/21 PASS. Verified amateur list order + 2m band detail via screenshot."
 
 metadata:
   created_by: "main_agent"

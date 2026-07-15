@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 
 import { AFUV_OUTSIDE_HINT, EMCOMM_HINT } from "@/src/bandplan/data";
-import { findHamSegment, isEmcomm, parseFrequencyKHz, powerRows, segmentRange, Unit } from "@/src/bandplan/frequency";
+import { findHamSegment, formatBandwidth, isEmcomm, parseFrequencyKHz, powerRows, segmentRange, Unit } from "@/src/bandplan/frequency";
 import { ScreenHeader } from "@/src/components/ScreenHeader";
 import { fontSize, monoFont, radius, spacing } from "@/src/theme/tokens";
 import { useTheme } from "@/src/theme/useTheme";
@@ -74,13 +74,13 @@ export default function FrequencyCheckScreen() {
             <View style={styles.resultTop}>
               <MaterialCommunityIcons name="check-circle" size={22} color={colors.success} />
               <Text style={[styles.resultBand, { color: colors.onSurface }]}>
-                {match.band.name} · {segmentRange(match.segment)}
+                {match.band.name} · {segmentRange(match.segment, match.band.unit)}
               </Text>
             </View>
 
             <Row label="Betriebsart" value={match.segment.mode} colors={colors} />
             {match.segment.recommended ? <Row label="Rufwelle" value={match.segment.recommended} colors={colors} /> : null}
-            {match.segment.bwHz != null ? <Row label="Max. Bandbreite" value={`${match.segment.bwHz} Hz`} colors={colors} /> : null}
+            {match.segment.bwHz != null ? <Row label="Max. Bandbreite" value={formatBandwidth(match.segment.bwHz)} colors={colors} /> : null}
             {powerRows(match.segment.power).map((r) => (
               <Row key={r.label} label={r.label} value={r.value} colors={colors} />
             ))}
