@@ -54,3 +54,10 @@ Android-App für Amateurfunker. Hub-and-Module-Architektur: zentraler Startbilds
   - Length: λ(m)=300/f, shortening factor 0.95 (editable under "Erweitert"); λ/4=0.25·300·VF/f, λ/2=0.5·…, 5/8=0.625·…, 1λ-stretched=1.0·…; 1λ-loop fixed 306.3/f (VF not applied).
   - Matching-device text + feed-point impedance per feed point (incl. 5/8 Anpassspule note); prominent length (2 decimals, German comma) + fixed disclaimer.
   - Pure logic unit-tested: `scripts/antenna-selftest.ts` → 19/19 pass. Flows verified via screenshots (λ/2 dipole, 1λ loop, λ/4 locked, 5/8 note, VF live-edit).
+
+## Update 2026-06 (Antenna simplified to bidirectional calculator)
+- [x] Removed feed-point (Speisepunkt) + matching-device (Anpassgerät) logic entirely. `src/antenna/antenna.ts` now: `computeLength(f, lambda, oneWhole, vf)` and `resonantBands(lengthM, vf)`.
+- [x] Two modes via segmented control: **Frequenz → Länge** (f MHz + λ-fraction → wire length) and **Länge → Bänder** (wire length → resonant IARU-R1 ham bands incl. harmonics f_n = n·150·VF/L).
+- [x] Verkürzungsfaktor fixed at DEFAULT_VF = 0.95 (loop uses 306.3/f). **"Erweitert · Verkürzungsfaktor" UI removed** per user request.
+- [x] Frequency field placeholder is "Sendefrequenz eingeben"; **warning shown when frequency typed without a decimal point** (e.g. "14200") asking the user to confirm intent.
+- [x] Unit tests: `scripts/antenna-selftest.ts` → 16/16 pass. Lint clean. UI verified via screenshots (forward result, decimal warning, advanced section gone).

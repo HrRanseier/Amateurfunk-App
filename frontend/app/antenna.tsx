@@ -32,8 +32,6 @@ export default function AntennaScreen() {
   const [lengthText, setLengthText] = useState("");
   const [lambda, setLambda] = useState<Lambda | null>(null);
   const [oneWhole, setOneWhole] = useState<OneWhole | null>(null);
-  const [advancedOpen, setAdvancedOpen] = useState(false);
-  const [vfText, setVfText] = useState(String(DEFAULT_VF));
 
   const sanitize = (t: string) => t.replace(/[^0-9.,]/g, "");
 
@@ -47,12 +45,7 @@ export default function AntennaScreen() {
     return isFinite(v) && v > 0 ? v : null;
   }, [lengthText]);
 
-  const isLoop = lambda === "1/1" && oneWhole === "loop";
-
-  const vf = useMemo(() => {
-    const v = parseFloat(vfText.replace(",", "."));
-    return isFinite(v) && v > 0 ? v : DEFAULT_VF;
-  }, [vfText]);
+  const vf = DEFAULT_VF;
 
   const selectLambda = (l: Lambda) => {
     Haptics.selectionAsync();
@@ -60,12 +53,12 @@ export default function AntennaScreen() {
     if (l !== "1/1") setOneWhole(null);
   };
 
-  const changeVf = (delta: number) => {
-    if (isLoop && mode === "forward") return;
-    Haptics.selectionAsync();
-    const next = Math.min(1, Math.max(0.5, Math.round((vf + delta) * 100) / 100));
-    setVfText(next.toFixed(2));
-  };
+  // Warn when a frequency is typed without any decimal separator (e.g. "14200"
+  // instead of "14.200") — likely a mistake, so we ask the user to confirm.
+  const freqNoDecimal = useMemo(
+    () => mode === "forward" && freqText.trim().length > 0 && !/[.,]/.test(freqText),
+    [mode, freqText],
+  );
 
   // Forward status/result
   let fwdStatus: string | null = null;
@@ -76,8 +69,6 @@ export default function AntennaScreen() {
 
   // Reverse result
   const bands = useMemo(() => (lengthVal ? resonantBands(lengthVal, vf) : []), [lengthVal, vf]);
-
-  const vfDisabled = mode === "forward" && isLoop;
 
   const StepHeader = (num: string, title: string) => (
     <View style={styles.stepHeader}>
@@ -103,55 +94,6 @@ export default function AntennaScreen() {
     >
       <Text style={[styles.chipText, { color: active ? colors.onBrandPrimary : colors.onSurface }]}>{label}</Text>
     </Pressable>
-  );
-
-  const renderAdvanced = () => (
-    <View style={[styles.card, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
-      <Pressable testID="antenna-advanced-toggle" onPress={() => setAdvancedOpen((v) => !v)} style={styles.advHeader}>
-        <Text style={[styles.advTitle, { color: colors.onSurface }]}>Erweitert · Verkürzungsfaktor</Text>
-        <MaterialCommunityIcons name={advancedOpen ? "chevron-up" : "chevron-down"} size={22} color={colors.onSurfaceMuted} />
-      </Pressable>
-      {advancedOpen && (
-        <View style={styles.advBody}>
-          <View style={styles.stepper}>
-            <Pressable
-              testID="vf-minus"
-              onPress={() => changeVf(-0.01)}
-              disabled={vfDisabled}
-              style={[styles.stepBtn, { backgroundColor: colors.surface, borderColor: colors.border, opacity: vfDisabled ? 0.5 : 1 }]}
-            >
-              <MaterialCommunityIcons name="minus" size={22} color={colors.brand} />
-            </Pressable>
-            <TextInput
-              testID="antenna-vf-input"
-              value={vfText}
-              onChangeText={(t) => setVfText(sanitize(t))}
-              keyboardType="decimal-pad"
-              inputMode="decimal"
-              editable={!vfDisabled}
-              selectTextOnFocus
-              style={[
-                styles.vfInput,
-                { color: colors.onSurface, borderColor: colors.border, backgroundColor: colors.surface, opacity: vfDisabled ? 0.5 : 1 },
-              ]}
-            />
-            <Pressable
-              testID="vf-plus"
-              onPress={() => changeVf(0.01)}
-              disabled={vfDisabled}
-              style={[styles.stepBtn, { backgroundColor: colors.surface, borderColor: colors.border, opacity: vfDisabled ? 0.5 : 1 }]}
-            >
-              <MaterialCommunityIcons name="plus" size={22} color={colors.brand} />
-            </Pressable>
-          </View>
-          {vfDisabled && (
-            <Text style={[styles.advNote, { color: colors.onSurfaceMuted }]}>
-              Bei Vollwellen-Loop nicht angewendet (feste Formel 306,3 / f).
-            </Text>
-          )}
-        </View>
-      )}
-    </View>
   );
 
   return (
@@ -221,12 +163,23 @@ export default function AntennaScreen() {
                   onChangeText={(t) => setFreqText(sanitize(t))}
                   keyboardType="decimal-pad"
                   inputMode="decimal"
-                  placeholder="z. B. 14.200"
+                  placeholder="Sendefrequenz eingeben"
                   placeholderTextColor={colors.onSurfaceMuted}
                   style={[styles.bigInput, { color: colors.onSurface, borderColor: colors.border, backgroundColor: colors.surface }]}
                 />
                 <Text style={[styles.unit, { color: colors.brand }]}>MHz</Text>
               </View>
+              {freqNoDecimal && (
+                <View
+                  testID="antenna-freq-warning"
+                  style={[styles.warnRow, { backgroundColor: colors.surface, borderColor: colors.warning }]}
+                >
+                  <MaterialCommunityIcons name="alert-outline" size={18} color={colors.warning} />
+                  <Text style={[styles.warnText, { color: colors.onSurface }]}>
+                    Kein Dezimalpunkt gesetzt – war das Absicht? Beispiel: 14.200 für 14,200 MHz.
+                  </Text>
+                </View>
+              )}
             </View>
 
             {/* Step 2 — Lambda */}
@@ -248,7 +201,6 @@ export default function AntennaScreen() {
               )}
             </View>
 
-            {lambda && renderAdvanced()}
           </>
         ) : (
           <>
@@ -389,20 +341,14 @@ const styles = StyleSheet.create({
   chipText: { fontSize: fontSize.sm, fontWeight: "700", textAlign: "center" },
   subLabel: { fontSize: fontSize.sm, fontWeight: "600" },
 
-  advHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  advTitle: { fontSize: fontSize.base, fontWeight: "700" },
-  advBody: { gap: spacing.sm },
-  stepper: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  stepBtn: { width: 52, height: 52, borderRadius: radius.md, borderWidth: 1, alignItems: "center", justifyContent: "center" },
-  vfInput: {
-    flex: 1,
-    height: 52,
+  warnRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
     borderRadius: radius.md,
     borderWidth: 1,
     paddingHorizontal: spacing.md,
-    fontSize: fontSize.xl,
-    fontFamily: monoFont,
-    textAlign: "center",
+    paddingVertical: spacing.sm,
   },
-  advNote: { fontSize: fontSize.sm, lineHeight: 18 },
+  warnText: { flex: 1, fontSize: fontSize.sm, lineHeight: 18, fontWeight: "600" },
 });
