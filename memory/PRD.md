@@ -36,6 +36,13 @@ Android-App für Amateurfunker. Hub-and-Module-Architektur: zentraler Startbilds
 - [x] Frontend tested: hub/nav/toast (22/23) + combined screen send/toggles/sliders/receive-notice (11/11).
 - [x] **Betrieb screen re-laid-out as a chat-style 3-zone layout (2026-06):** fixed header (back + title + mic toggle with green pulse + settings gear), scrollable transcript-only middle (flex:1, auto-scroll, dismissible native-only banner), fixed footer above keyboard (compact 1-line send preview + queue/Reset row + full-width input) via `KeyboardAvoidingView`. Frequency/speed sliders + output selection moved into a `SettingsSheet` modal (Modal-based bottom-sheet). Functionality unchanged (same useMorseSender/useMorseReceiver hooks).
 
+## Update 2026-06 (Bandplan module — 3 phases, all tested green iteration_5)
+- [x] Hub tile **Bandplan** active (`/bandplan`, subtitle "KW · CB · Flugfunk").
+- [x] **Phase 1 — Amateur KW bandplan** (`app/bandplan/index.tsx`, `band.tsx`, `check.tsx`; data `src/bandplan/data.ts` + `frequency.ts`, 15/15 unit tests). Band list 2200m..10m → detail with per-segment mode, recommended Rufwelle, max bandwidth, power per class A/E/N, "Quelle: DARC …" footer. Frequenz prüfen: kHz/MHz toggle, comma+dot, "Erkannt: X kHz", in-band card, EMCOMM highlight (3760/7110/14300/18160/21360 kHz), out-of-band → §16 Abs.9 AFuV text. Main-screen disclaimer.
+- [x] **Phase 2 — CB-Funk** (`app/bandplan/cb.tsx`, data `src/bandplan/cbData.ts`, 13/13 unit tests). 3 tabs: 80-channel list (ch9 = "informeller Notrufkanal – keine amtliche Festlegung", NOT official); Frequenz prüfen (ch1-40 AM/FM/SSB, ch41-80 nur FM, Datenkanal flag for {6,7,24,25,52,53,76,77}, outside 26.565-27.405 message); Kanal→Frequenz Band A–J (A green legal, B–J export warning, no power/mode). Band B–J derived from Band A + verified per-band offset (fixed one OCR anomaly Band D ch25 = 28.145).
+- [x] **Phase 3 — Flugfunk / OpenAIP** (`app/bandplan/flugfunk.tsx` + backend `server.py` proxy). Backend `GET /api/flugfunk/airports?search=` and `GET /api/flugfunk/frequency?mhz=&country=DE` (±0.005 MHz, 24h in-memory country cache). API key server-side only in `OPENAIP_API_KEY`. Frontend: Flughafen→Freq. and Freq.→Flughafen tabs, mandatory disclaimer + "Daten: OpenAIP (openaip.net)". Works in web preview + native (backend-backed).
+- [x] Data notes: ch9 text overridden per user; Bereich-1 channel notes come from PDF while Bereich-2 data-channel flag uses the user's explicit set {6,7,24,25,52,53,76,77}; Band D ch25 OCR corrected via deterministic offset scheme.
+
 ## Backlog
 - P1: Bandplan, Q-Codes modules (registry-driven).
 - P2: adjustable dot/dash weighting, waterfall/spectrum view for receive, save/share sessions.
