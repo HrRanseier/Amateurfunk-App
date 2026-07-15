@@ -24,6 +24,14 @@ export const modules: ToolModule[] = [
     subtitle: "Text \u21C4 Morse",
   },
   {
+    id: "antenna",
+    title: "Antennenrechner",
+    icon: "calculator-variant",
+    route: "/antenna",
+    enabled: true,
+    subtitle: "Drahtlänge berechnen",
+  },
+  {
     id: "callsign",
     title: "Rufzeichen",
     icon: "antenna",

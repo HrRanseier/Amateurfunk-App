@@ -46,3 +46,11 @@ Android-App für Amateurfunker. Hub-and-Module-Architektur: zentraler Startbilds
 
 ## Next Tasks
 - Generate an Android build (Publish) to validate live mic decoding + torch on-device, then tune calibration thresholds if needed.
+
+## Update 2026-06 (Title + Antenna module)
+- [x] Home title changed to "Funk Toolbox" with small subtitle "by DJ 1 IR".
+- [x] New ACTIVE module **Antennenrechner** (`/app/antenna.tsx`, logic in `src/antenna/antenna.ts`, registry entry, calculator icon):
+  - 3-step flow: frequency (MHz) → lambda (1/4, 1/2, 5/8, 1/1 → Bauform stretched/loop) → feed point (auto-locked for λ/4, 5/8, 1λ-stretched; user-choice for λ/2 and 1λ-loop).
+  - Length: λ(m)=300/f, shortening factor 0.95 (editable under "Erweitert"); λ/4=0.25·300·VF/f, λ/2=0.5·…, 5/8=0.625·…, 1λ-stretched=1.0·…; 1λ-loop fixed 306.3/f (VF not applied).
+  - Matching-device text + feed-point impedance per feed point (incl. 5/8 Anpassspule note); prominent length (2 decimals, German comma) + fixed disclaimer.
+  - Pure logic unit-tested: `scripts/antenna-selftest.ts` → 19/19 pass. Flows verified via screenshots (λ/2 dipole, 1λ loop, λ/4 locked, 5/8 note, VF live-edit).

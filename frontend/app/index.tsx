@@ -41,10 +41,10 @@ export default function HubScreen() {
         </View>
         <View style={styles.headerText}>
           <Text testID="app-title" style={[styles.title, { color: colors.onSurface }]}>
-            Funk-Toolbox
+            Funk Toolbox
           </Text>
           <Text style={[styles.subtitle, { color: colors.onSurfaceMuted }]}>
-            Werkzeuge für Amateurfunk
+            by DJ 1 IR
           </Text>
         </View>
       </View>
