@@ -113,26 +113,32 @@ user_problem_statement: |
 frontend:
   - task: "Rufzeichen module — hub tile active + navigation"
     implemented: true
-    working: "NA"
+    working: true
     file: "app/index.tsx, src/modules/registry.ts"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         -working: "NA"
         -agent: "main"
         -comment: "Registry entry enabled (route /callsign). Hub shows active green tile 'Rufzeichen / Callbook-Suche'. Verified via screenshot."
+        -working: true
+        -agent: "testing"
+        -comment: "iteration_4: tile active (no lock), navigates to Rufzeichen screen. PASS."
   - task: "Rufzeichen screen — input uppercase + search + web-only notice"
     implemented: true
-    working: "NA"
+    working: true
     file: "app/callsign.tsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         -working: "NA"
         -agent: "main"
         -comment: "Input auto-uppercases (dl5xyz->DL5XYZ), search button disabled when empty. On WEB preview the live WebView lookup is NOT available; searching shows a German native-only notice (testID callsign-web-notice). Verified via screenshots."
+        -working: true
+        -agent: "testing"
+        -comment: "iteration_4: uppercase works, button disabled-when-empty works, callsign-web-notice shows expected German text, back nav works. PASS."
   - task: "Rufzeichen live lookup (HamQTH WebView extraction) — NATIVE ONLY"
     implemented: true
     working: "NA"

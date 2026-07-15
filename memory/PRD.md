@@ -37,8 +37,16 @@ Android-App für Amateurfunker. Hub-and-Module-Architektur: zentraler Startbilds
 - [x] **Betrieb screen re-laid-out as a chat-style 3-zone layout (2026-06):** fixed header (back + title + mic toggle with green pulse + settings gear), scrollable transcript-only middle (flex:1, auto-scroll, dismissible native-only banner), fixed footer above keyboard (compact 1-line send preview + queue/Reset row + full-width input) via `KeyboardAvoidingView`. Frequency/speed sliders + output selection moved into a `SettingsSheet` modal (Modal-based bottom-sheet). Functionality unchanged (same useMorseSender/useMorseReceiver hooks).
 
 ## Backlog
-- P1: Rufzeichen, Bandplan, Q-Codes modules (registry-driven).
+- P1: Bandplan, Q-Codes modules (registry-driven).
 - P2: adjustable dot/dash weighting, waterfall/spectrum view for receive, save/share sessions.
+
+## Update 2026-06 (Rufzeichen module)
+- [x] New ACTIVE module **Rufzeichen** (`/app/callsign.tsx`, registry entry enabled, antenna icon, subtitle "Callbook-Suche"). Replaces the former disabled placeholder.
+- [x] UI: callsign TextInput auto-uppercases + sanitises to A-Z0-9/, "Suchen" button (disabled when empty), native result card, same theme/tokens/layout as other modules.
+- [x] Lookup: on search a hidden `react-native-webview` loads `https://www.hamqth.com/<call-lowercase>`. Injected JS (`EXTRACT_JS`) reads the fixed `td.infoDesc` label/value pairs and posts back ONLY Name, QTH, Country, Grid, CQ, ITU. Address/birth/license/activity/social/nav are never mapped.
+- [x] "Callsign not found in the database" → native "Rufzeichen nicht gefunden".
+- [x] Fallback (`FALLBACK_JS`): if extraction returns empty/errors or 12s timeout, the WebView is shown visibly with injected CSS/JS that isolates `#callInfo`, drops the address column (2nd `.col-sm-3`) and strips navbar/ads/footer.
+- [x] **NATIVE-ONLY:** react-native-webview injection does not run in the web preview (cross-origin). On web (`Platform.OS==='web'`) the search shows a German notice (testID `callsign-web-notice`). Extraction selectors validated OFFLINE against real HamQTH HTML (OK2CQR → all 6 fields; DL5XYZ → notfound). Frontend UI + regressions tested green (iteration_4). Live lookup to be validated in Expo Go / build.
 
 ## Notes / Limitations
 - Ton (WebView Web Audio) + Vibration work in Expo Go; Licht (torch) and **microphone live decoding require the published build** (expo-stream-audio is a native module, not in Expo Go / web). Receive decode validated via unit tests until a build is generated.
