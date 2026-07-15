@@ -5,7 +5,6 @@ import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 
-import { ScreenHeader } from "@/src/components/ScreenHeader";
 import {
   computeLength,
   DEFAULT_VF,
@@ -18,6 +17,7 @@ import {
   OneWhole,
   RESULT_HINT,
 } from "@/src/antenna/antenna";
+import { ScreenHeader } from "@/src/components/ScreenHeader";
 import { fontSize, monoFont, radius, spacing } from "@/src/theme/tokens";
 import { useTheme } from "@/src/theme/useTheme";
 
@@ -52,6 +52,8 @@ export default function AntennaScreen() {
     return feedConfig(lambda, null);
   }, [lambda, oneWhole]);
 
+  const onlyDigits = (t: string) => t.replace(/[^0-9.,]/g, "");
+
   const selectLambda = (l: Lambda) => {
     Haptics.selectionAsync();
     setLambda(l);
@@ -72,13 +74,31 @@ export default function AntennaScreen() {
     setFeed(c.locked ? c.options[0] : null);
   };
 
-  const selectFeed = (f: FeedPoint) => {
+  const changeVf = (delta: number) => {
+    if (isLoop) return;
     Haptics.selectionAsync();
-    setFeed(f);
+    const next = Math.min(1, Math.max(0.5, Math.round((vf + delta) * 100) / 100));
+    setVfText(next.toFixed(2));
   };
 
-  const length = freq && feed && lambda ? computeLength(freq, lambda, oneWhole, vf) : null;
-  const device = feed && lambda ? matchingDevice(feed, lambda) : null;
+  // Determine current state so the result card can always show clear guidance.
+  let status: string | null = null;
+  if (freq == null) status = "Sendefrequenz eingeben";
+  else if (lambda == null) status = "Lambda-Anteil wählen";
+  else if (lambda === "1/1" && oneWhole == null) status = "Bauform wählen";
+  else if (feed == null) status = "Speisepunkt wählen";
+
+  const length = status == null && freq && lambda ? computeLength(freq, lambda, oneWhole, vf) : null;
+  const device = status == null && feed && lambda ? matchingDevice(feed, lambda) : null;
+
+  const StepHeader = (num: string, title: string) => (
+    <View style={styles.stepHeader}>
+      <View style={[styles.stepNum, { backgroundColor: colors.brandPrimary }]}>
+        <Text style={[styles.stepNumText, { color: colors.onBrandPrimary }]}>{num}</Text>
+      </View>
+      <Text style={[styles.stepTitle, { color: colors.onSurface }]}>{title}</Text>
+    </View>
+  );
 
   const Chip = (label: string, active: boolean, onPress: () => void, testID: string) => (
     <Pressable
@@ -93,9 +113,7 @@ export default function AntennaScreen() {
         },
       ]}
     >
-      <Text style={[styles.chipText, { color: active ? colors.onBrandPrimary : colors.onSurface }]}>
-        {label}
-      </Text>
+      <Text style={[styles.chipText, { color: active ? colors.onBrandPrimary : colors.onSurface }]}>{label}</Text>
     </Pressable>
   );
 
@@ -106,19 +124,22 @@ export default function AntennaScreen() {
         key={opt}
         testID={`feed-option-${opt}`}
         disabled={locked}
-        onPress={() => selectFeed(opt)}
+        onPress={() => {
+          Haptics.selectionAsync();
+          setFeed(opt);
+        }}
         style={[
           styles.optRow,
           {
             backgroundColor: selected ? colors.brandTertiary : colors.surface,
             borderColor: selected ? colors.borderStrong : colors.border,
-            opacity: locked && !selected ? 0.5 : 1,
+            opacity: locked && !selected ? 0.6 : 1,
           },
         ]}
       >
         <MaterialCommunityIcons
           name={locked ? "lock-outline" : selected ? "radiobox-marked" : "radiobox-blank"}
-          size={20}
+          size={22}
           color={selected ? colors.brand : colors.onSurfaceMuted}
         />
         <Text style={[styles.optText, { color: colors.onSurface }]}>{FEED_LABEL[opt]}</Text>
@@ -139,16 +160,43 @@ export default function AntennaScreen() {
         showsVerticalScrollIndicator={false}
         bottomOffset={spacing.xl}
       >
+        {/* Result — always visible at the top, updates live */}
+        <View style={[styles.resultCard, { backgroundColor: colors.surfaceSecondary, borderColor: colors.borderStrong }]}>
+          {length == null || device == null ? (
+            <View style={styles.statusWrap}>
+              <MaterialCommunityIcons name="ruler" size={26} color={colors.onSurfaceMuted} />
+              <Text testID="antenna-result-status" style={[styles.statusText, { color: colors.onSurfaceMuted }]}>
+                {status ?? "Eingaben vervollständigen"}
+              </Text>
+            </View>
+          ) : (
+            <>
+              <Text style={[styles.resultLabel, { color: colors.onSurfaceMuted }]}>DRAHTLÄNGE</Text>
+              <Text testID="antenna-result-length" style={[styles.resultLength, { color: colors.brand }]}>
+                {length.toFixed(2).replace(".", ",")} m
+              </Text>
+              <View style={[styles.deviceBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Text style={[styles.deviceTitle, { color: colors.onSurfaceMuted }]}>EMPFOHLENES ANPASSGERÄT</Text>
+                <Text testID="antenna-result-device" style={[styles.deviceText, { color: colors.onSurface }]}>
+                  {device}
+                </Text>
+              </View>
+              <Text style={[styles.disclaimer, { color: colors.onSurfaceMuted }]}>{RESULT_HINT}</Text>
+            </>
+          )}
+        </View>
+
         {/* Step 1 — Frequency */}
         <View style={[styles.card, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
-          <Text style={[styles.stepLabel, { color: colors.onSurfaceMuted }]}>1 · SENDEFREQUENZ</Text>
+          {StepHeader("1", "Sendefrequenz")}
           <View style={styles.freqRow}>
             <TextInput
               testID="antenna-freq-input"
               value={freqText}
-              onChangeText={setFreqText}
+              onChangeText={(t) => setFreqText(onlyDigits(t))}
               keyboardType="decimal-pad"
-              placeholder="z.B. 14.200"
+              inputMode="decimal"
+              placeholder="z. B. 14.200"
               placeholderTextColor={colors.onSurfaceMuted}
               style={[styles.freqInput, { color: colors.onSurface, borderColor: colors.border, backgroundColor: colors.surface }]}
             />
@@ -158,9 +206,11 @@ export default function AntennaScreen() {
 
         {/* Step 2 — Lambda */}
         <View style={[styles.card, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
-          <Text style={[styles.stepLabel, { color: colors.onSurfaceMuted }]}>2 · LAMBDA-ANTEIL</Text>
+          {StepHeader("2", "Lambda-Anteil")}
           <View style={styles.chipRow}>
-            {LAMBDAS.map((l) => Chip(LAMBDA_LABEL[l], lambda === l, () => selectLambda(l), `lambda-chip-${l.replace("/", "-")}`))}
+            {LAMBDAS.map((l) =>
+              Chip(LAMBDA_LABEL[l], lambda === l, () => selectLambda(l), `lambda-chip-${l.replace("/", "-")}`),
+            )}
           </View>
 
           {lambda === "1/1" && (
@@ -177,47 +227,56 @@ export default function AntennaScreen() {
         {/* Step 3 — Feed point */}
         {cfg && (
           <View style={[styles.card, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
-            <Text style={[styles.stepLabel, { color: colors.onSurfaceMuted }]}>3 · SPEISEPUNKT</Text>
-            <View style={styles.optList}>{cfg.options.map((opt) => FeedRow(opt, cfg.locked))}</View>
-            {!cfg.locked && feed === null && (
-              <Text style={[styles.hintInline, { color: colors.warning }]}>Bitte Speisepunkt wählen</Text>
+            {StepHeader("3", "Speisepunkt")}
+            {cfg.locked && (
+              <Text style={[styles.lockedHint, { color: colors.onSurfaceMuted }]}>
+                Für diese Bauart fest vorgegeben.
+              </Text>
             )}
+            <View style={styles.optList}>{cfg.options.map((opt) => FeedRow(opt, cfg.locked))}</View>
           </View>
         )}
 
-        {/* Advanced — shortening factor */}
+        {/* Advanced — shortening factor with stepper */}
         {lambda && (
           <View style={[styles.card, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
             <Pressable testID="antenna-advanced-toggle" onPress={() => setAdvancedOpen((v) => !v)} style={styles.advHeader}>
               <Text style={[styles.advTitle, { color: colors.onSurface }]}>Erweitert</Text>
-              <MaterialCommunityIcons
-                name={advancedOpen ? "chevron-up" : "chevron-down"}
-                size={22}
-                color={colors.onSurfaceMuted}
-              />
+              <MaterialCommunityIcons name={advancedOpen ? "chevron-up" : "chevron-down"} size={22} color={colors.onSurfaceMuted} />
             </Pressable>
             {advancedOpen && (
               <View style={styles.advBody}>
-                <View style={styles.freqRow}>
-                  <Text style={[styles.advLabel, { color: colors.onSurface }]}>Verkürzungsfaktor</Text>
+                <Text style={[styles.advLabel, { color: colors.onSurface }]}>Verkürzungsfaktor</Text>
+                <View style={styles.stepper}>
+                  <Pressable
+                    testID="vf-minus"
+                    onPress={() => changeVf(-0.01)}
+                    disabled={isLoop}
+                    style={[styles.stepBtn, { backgroundColor: colors.surface, borderColor: colors.border, opacity: isLoop ? 0.5 : 1 }]}
+                  >
+                    <MaterialCommunityIcons name="minus" size={22} color={colors.brand} />
+                  </Pressable>
                   <TextInput
                     testID="antenna-vf-input"
                     value={vfText}
-                    onChangeText={setVfText}
+                    onChangeText={(t) => setVfText(t.replace(/[^0-9.,]/g, ""))}
                     keyboardType="decimal-pad"
+                    inputMode="decimal"
                     editable={!isLoop}
-                    placeholder="0.95"
-                    placeholderTextColor={colors.onSurfaceMuted}
+                    selectTextOnFocus
                     style={[
                       styles.vfInput,
-                      {
-                        color: colors.onSurface,
-                        borderColor: colors.border,
-                        backgroundColor: colors.surface,
-                        opacity: isLoop ? 0.5 : 1,
-                      },
+                      { color: colors.onSurface, borderColor: colors.border, backgroundColor: colors.surface, opacity: isLoop ? 0.5 : 1 },
                     ]}
                   />
+                  <Pressable
+                    testID="vf-plus"
+                    onPress={() => changeVf(0.01)}
+                    disabled={isLoop}
+                    style={[styles.stepBtn, { backgroundColor: colors.surface, borderColor: colors.border, opacity: isLoop ? 0.5 : 1 }]}
+                  >
+                    <MaterialCommunityIcons name="plus" size={22} color={colors.brand} />
+                  </Pressable>
                 </View>
                 {isLoop && (
                   <Text style={[styles.advNote, { color: colors.onSurfaceMuted }]}>
@@ -226,25 +285,6 @@ export default function AntennaScreen() {
                 )}
               </View>
             )}
-          </View>
-        )}
-
-        {/* Result */}
-        {length != null && device && (
-          <View style={[styles.resultCard, { backgroundColor: colors.surfaceSecondary, borderColor: colors.borderStrong }]}>
-            <Text style={[styles.resultLabel, { color: colors.onSurfaceMuted }]}>DRAHTLÄNGE</Text>
-            <Text testID="antenna-result-length" style={[styles.resultLength, { color: colors.brand }]}>
-              {length.toFixed(2).replace(".", ",")} m
-            </Text>
-
-            <View style={[styles.deviceBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <Text style={[styles.deviceTitle, { color: colors.onSurfaceMuted }]}>EMPFOHLENES ANPASSGERÄT</Text>
-              <Text testID="antenna-result-device" style={[styles.deviceText, { color: colors.onSurface }]}>
-                {device}
-              </Text>
-            </View>
-
-            <Text style={[styles.disclaimer, { color: colors.onSurfaceMuted }]}>{RESULT_HINT}</Text>
           </View>
         )}
       </KeyboardAwareScrollView>
@@ -256,12 +296,27 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   flex: { flex: 1 },
   content: { padding: spacing.lg, paddingBottom: spacing.xxxl, gap: spacing.md },
-  card: { borderRadius: radius.lg, borderWidth: 1, padding: spacing.lg, gap: spacing.sm },
-  stepLabel: { fontSize: fontSize.sm, fontWeight: "700", letterSpacing: 1 },
+
+  resultCard: { borderRadius: radius.lg, borderWidth: 2, padding: spacing.lg, gap: spacing.xs },
+  statusWrap: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingVertical: spacing.sm },
+  statusText: { flex: 1, fontSize: fontSize.base, fontWeight: "600" },
+  resultLabel: { fontSize: fontSize.sm, fontWeight: "700", letterSpacing: 1 },
+  resultLength: { fontSize: fontSize.huge, fontWeight: "800", fontFamily: monoFont },
+  deviceBox: { borderRadius: radius.md, borderWidth: 1, padding: spacing.md, gap: spacing.xs, marginTop: spacing.xs },
+  deviceTitle: { fontSize: fontSize.sm, fontWeight: "700", letterSpacing: 0.5 },
+  deviceText: { fontSize: fontSize.base, fontWeight: "600", lineHeight: 20 },
+  disclaimer: { fontSize: fontSize.sm, lineHeight: 18, marginTop: spacing.xs },
+
+  card: { borderRadius: radius.lg, borderWidth: 1, padding: spacing.lg, gap: spacing.md },
+  stepHeader: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  stepNum: { width: 24, height: 24, borderRadius: radius.pill, alignItems: "center", justifyContent: "center" },
+  stepNumText: { fontSize: fontSize.sm, fontWeight: "800" },
+  stepTitle: { fontSize: fontSize.lg, fontWeight: "700" },
+
   freqRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   freqInput: {
     flex: 1,
-    height: 52,
+    height: 54,
     borderRadius: radius.md,
     borderWidth: 1,
     paddingHorizontal: spacing.md,
@@ -269,6 +324,7 @@ const styles = StyleSheet.create({
     fontFamily: monoFont,
   },
   unit: { fontSize: fontSize.lg, fontWeight: "800" },
+
   chipRow: { flexDirection: "row", gap: spacing.sm },
   chip: {
     flex: 1,
@@ -280,7 +336,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xs,
   },
   chipText: { fontSize: fontSize.sm, fontWeight: "700", textAlign: "center" },
-  subLabel: { fontSize: fontSize.sm, fontWeight: "600", marginTop: spacing.xs },
+  subLabel: { fontSize: fontSize.sm, fontWeight: "600" },
+
+  lockedHint: { fontSize: fontSize.sm },
   optList: { gap: spacing.sm },
   optRow: {
     flexDirection: "row",
@@ -291,27 +349,29 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   optText: { flex: 1, fontSize: fontSize.base, fontWeight: "600" },
-  hintInline: { fontSize: fontSize.sm, fontWeight: "600", marginTop: spacing.xs },
+
   advHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   advTitle: { fontSize: fontSize.base, fontWeight: "700" },
-  advBody: { gap: spacing.sm, marginTop: spacing.sm },
-  advLabel: { flex: 1, fontSize: fontSize.base, fontWeight: "600" },
+  advBody: { gap: spacing.sm },
+  advLabel: { fontSize: fontSize.base, fontWeight: "600" },
+  stepper: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  stepBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   vfInput: {
-    width: 96,
-    height: 48,
+    flex: 1,
+    height: 52,
     borderRadius: radius.md,
     borderWidth: 1,
     paddingHorizontal: spacing.md,
-    fontSize: fontSize.lg,
+    fontSize: fontSize.xl,
     fontFamily: monoFont,
     textAlign: "center",
   },
   advNote: { fontSize: fontSize.sm, lineHeight: 18 },
-  resultCard: { borderRadius: radius.lg, borderWidth: 2, padding: spacing.lg, gap: spacing.sm },
-  resultLabel: { fontSize: fontSize.sm, fontWeight: "700", letterSpacing: 1 },
-  resultLength: { fontSize: fontSize.huge, fontWeight: "800", fontFamily: monoFont },
-  deviceBox: { borderRadius: radius.md, borderWidth: 1, padding: spacing.md, gap: spacing.xs, marginTop: spacing.xs },
-  deviceTitle: { fontSize: fontSize.sm, fontWeight: "700", letterSpacing: 0.5 },
-  deviceText: { fontSize: fontSize.base, fontWeight: "600", lineHeight: 20 },
-  disclaimer: { fontSize: fontSize.sm, lineHeight: 18, marginTop: spacing.xs },
 });

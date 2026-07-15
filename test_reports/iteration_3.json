@@ -1,0 +1,32 @@
+{
+  "summary": "Antennenrechner (Funk Toolbox) re-tested end-to-end on public Expo web preview (390x844). ALL 8 review-request scenarios PASS. Result card is always visible at TOP with correct live status guidance ('Sendefrequenz eingeben' → 'Lambda-Anteil wählen' → 'Bauform wählen' (only for 1λ) → 'Speisepunkt wählen'). BUG1 fixed: length is calculated live. BUG2 fixed: Verkürzungsfaktor stepper (vf-minus / vf-plus) AND text input both update the length reactively. VF stepper + input are correctly disabled (aria-disabled=true, readOnly) when 1λ + Vollwellen-Loop is selected. Hub title 'Funk Toolbox' + 'by DJ 1 IR' subtitle render correctly. header-back-button returns to hub. NOTE: The review request states λ/4 @ 14.2 MHz should be '10,04 m' — this appears to be a typo in the request. The applied formula (0.25·300·0.95/14.2) yields 5,02 m and the app correctly shows 5,02 m (matching the module's 19/19 Node unit tests). 10,04 m is the λ/2 value at 14.2 MHz, which the app also produces correctly.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": ["/app/test_reports/iteration_3.json", "/app/test_reports/iteration_2.json", "/app/test_reports/iteration_1.json"],
+  "action_items": [
+    "None for the antenna module — all review items pass.",
+    "(Carry-over from iteration_2, unrelated to antenna) Move pointerEvents=\"none\" from prop to style in /app/frontend/src/components/Toast.tsx (~line 44) to silence the RN deprecation warning.",
+    "(Info only) Review-request BUG1 expected value '10,04 m' for λ/4 @ 14.2 MHz is a typo — the correct λ/4 value is 5,02 m (matches formula 0.25·300·VF/f and unit tests). No code change needed."
+  ],
+  "critical_code_review_comments": [
+    "antenna.tsx: result card at top always renders with live `status` derived from freq/lambda/oneWhole/feed — matches the requested UX.",
+    "antenna.tsx: selectLambda properly resets oneWhole and pre-selects feed when locked (λ/4 & 5/8 vertical, 1λ-stretched endfed1l).",
+    "antenna.tsx: `isLoop = lambda==='1/1' && oneWhole==='loop'` gates VF stepper AND text input (editable={!isLoop}) — confirmed disabled visually and semantically (aria-disabled=true, readOnly=true).",
+    "antenna.ts computeLength: verified all 4 lambda paths on the live UI at f=14.2, VF=0.95: λ/4→5,02, λ/2→10,04, 5/8→12,54, 1λ-loop→21,57 (=306.3/14.2). All match the pure-formula expectations.",
+    "matchingDevice: 5/8 branch correctly appends '; ggf. Anpassspule zur Kompensation' ONLY for 5/8 (λ/4 device text does NOT include 'Anpassspule') — validated live.",
+    "changeVf clamps to [0.5, 1] with 0.01 step and 2-decimal rounding — 3 taps on vf-minus took 0.95→0.92 and one vf-plus took it back to 0.93 as expected.",
+    "All required testIDs present: app-title, tool-tile-antenna, header-back-button, antenna-freq-input, lambda-chip-1-4/1-2/5-8/1-1, onewhole-stretched/loop, feed-option-{vertical,dipole,efhw,endfed1l,loopCenter,loopCorner}, antenna-advanced-toggle, vf-minus, vf-plus, antenna-vf-input, antenna-result-status, antenna-result-length, antenna-result-device."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (no backend by design)", "frontend": "8/8 review items PASS"},
+  "seed_data_creation": "None. App is fully offline.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Public URL https://funk-toolbox.preview.emergentagent.com/. Mobile viewport 390x844. To reach VF stepper, tap [data-testid=\"antenna-advanced-toggle\"] first — the stepper is collapsed by default. Expected numeric outputs at f=14.2 MHz, VF=0.95: λ/4=5,02 m; λ/2=10,04 m; 5/8=12,54 m; 1λ-loop=21,57 m; 1λ-stretched=28,66 m. The review-request text for BUG1 says '10,04 m' for λ/4 but that is a typo — treat 5,02 m as correct.",
+  "rca_of_issue": "N/A — both reported bugs are resolved. Redesign moved the result card to the top with an always-visible live status message, and the Verkürzungsfaktor stepper (vf-minus/vf-plus) plus editable text input both drive the length in real time. Loop variant correctly disables VF controls."
+}
