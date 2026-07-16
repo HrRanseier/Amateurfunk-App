@@ -59,7 +59,8 @@ export const modules: ToolModule[] = [
     id: "qcodes",
     title: "Q-Codes",
     icon: "alphabetical",
-    enabled: false,
-    subtitle: "Bald verf\u00FCgbar",
+    route: "/qcodes",
+    enabled: true,
+    subtitle: "Codes & K\u00FCrzel",
   },
 ];

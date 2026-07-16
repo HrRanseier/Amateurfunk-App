@@ -1,0 +1,57 @@
+{
+  "summary": "Q-Codes module fully validated on Expo web preview (390x844). Hub tile tool-tile-qcodes is ACTIVE and navigates to /qcodes with ScreenHeader 'Q-Codes'. Default state (Alle, exam off, empty query): qcode-count = '64 Einträge', alphabetical order confirmed (73, 88, 99, ANT, BK, CQ, ...). Placeholder 'Code oder Stichwort suchen…' present. Filter chip qcode-filter-qcode -> 30 Einträge, QRZ visible, CQ/99/73 absent; qcode-filter-abbr -> 34 Einträge, CQ visible, QRZ absent; qcode-filter-all restores 64. Multi-match search over code+meaning+hidden keywords: 'standort' -> [QTH] with 'Prüfung' badge + Frage + Aussage + Merkhilfe ('H wie Home'); 'danke' -> [TNX] via keyword; 'verschwinde' -> [99]; 'QR' -> 19 simultaneous matches (QRA..QTR range) confirming multi-match (not autocomplete). qcode-search-clear empties input and restores 64. qcode-exam-toggle ON -> 16 exam entries (QRL, QRM, QRN, QRO, QRP, QRQ, QRS, QRT, QRV, QRX, QRZ, QSB, QSL, QSO, QSY, QTH); QRL/QRZ/QTH present, QRA/CQ/73 absent as required. qcode-item-99 renders as WARNING card: 2px border, red border color rgb(211,47,47), alert icon, red warning statement text, type badge 'Abkürzung'. REGRESSION: hub tiles tool-tile-morse, tool-tile-antenna, tool-tile-callsign, tool-tile-bandplan, tool-tile-repeater all navigate to their routes. Deprecated packages detected: none. React Native web-only shadow* deprecation warning still present (pre-existing, non-blocking, from repeater screen).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "shadow* style props", "issue": "Pre-existing web console warning '\"shadow*\" style props are deprecated. Use \"boxShadow\".' Emitted from repeater screen (styles.suggestBox in /app/frontend/app/repeater/index.tsx). Out of scope for this iteration; already tracked in iteration_9."}
+    ]
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_10.json"
+  ],
+  "action_items": [
+    "None required for Q-Codes feature - all acceptance criteria met.",
+    "Optional carry-over from iteration_9: migrate shadow* -> boxShadow in repeater/index.tsx to silence RN web warning."
+  ],
+  "critical_code_review_comments": [
+    "searchEntries() in /app/frontend/src/qcodes/data.ts uses a per-call lowercase + concatenation for every entry on every keystroke. With 64 entries it is negligible, but if the list grows past ~500 entries consider precomputing a lowercased haystack once at module load.",
+    "The Q-code entry '99' relies on the code being used verbatim as a testID and route-safe key. Any future entry whose code contains characters problematic for CSS selectors (currently 'HW?' and 'CQ DX' work because Playwright uses attribute quotes, but manual CSS querying would break) should be aliased via a slug field.",
+    "QSD, QSK, QSP, QSV, QTC have only a `statement` (no `question`); the render logic correctly omits the 'Frage/Aussage' label pair for these, which is consistent with the requirement 'where both exist'.",
+    "app/qcodes.tsx (269 lines) is under the 700-line threshold; no split needed yet."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (offline module, no backend calls)", "frontend": "100% (10/10 acceptance items)"},
+  "seed_data_creation": "None - module uses static QENTRIES array (64 entries: 30 Q-codes + 2 numeric abbrs 73/88 + 32 operating abbrs incl. warning entry 99).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Public URL https://funk-toolbox.preview.emergentagent.com, mobile 390x844. Q-Codes screen is fully offline. testIDs used: tool-tile-qcodes, qcode-search-input, qcode-search-clear, qcode-filter-{all,qcode,abbr}, qcode-exam-toggle, qcode-count, qcode-empty, qcode-item-<CODE>. Codes with special chars used verbatim: qcode-item-99, qcode-item-HW?, qcode-item-CQ DX, qcode-item-CQ TEST, qcode-item-GM / GA / GE / GN. Total 64 entries; alphabetical German locale sort places 73/88/99 first, then ANT, BK, CQ, ..., YL. 16 entries carry exam:true.",
+  "detailed_results": {
+    "hub": {
+      "qcodes_tile_visible": true,
+      "regression_tiles_navigate": {"morse": true, "antenna": true, "callsign": true, "bandplan": true, "repeater": true}
+    },
+    "qcodes": {
+      "url_on_tap": "/qcodes",
+      "header": "Q-Codes",
+      "placeholder": "Code oder Stichwort suchen…",
+      "default_count": "64 Einträge",
+      "first_six_alphabetical": ["73", "88", "99", "ANT", "BK", "CQ"],
+      "filter_qcode_count": "30 Einträge",
+      "filter_abbr_count": "34 Einträge",
+      "filter_all_restore": "64 Einträge",
+      "search_standort": ["QTH"],
+      "qth_card_has": {"Pruefung_badge": true, "Frage": true, "Aussage": true, "Merkhilfe": true},
+      "search_danke": ["TNX"],
+      "search_verschwinde": ["99"],
+      "search_QR_count": 19,
+      "clear_button_restores_64": true,
+      "exam_on_count": 16,
+      "exam_on_includes": ["QRL", "QRZ", "QTH"],
+      "exam_on_excludes": ["QRA", "CQ", "73"],
+      "item_99_warning": {"borderWidth_px": 2, "borderColor": "rgb(211, 47, 47)", "type_badge": "Abkürzung", "alert_icon": true}
+    }
+  }
+}

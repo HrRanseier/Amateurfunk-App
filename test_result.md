@@ -239,6 +239,18 @@ frontend:
         -agent: "main"
         -comment: "Full rewrite: single screen, all filters combinable, no tabs. (1) Text autocomplete repeater-text-input debounced -> GET /api/repeater/suggest?q=, dropdown repeater-suggest + repeater-suggest-item-<id>; tap -> /repeater/detail. Prefix match on location/call (case-insensitive); 'Zug' -> Zugspitze verified. (2) Dynamic band chips repeater-band-<key> from GET /api/repeater/bands (only present bands + counts: 10m19,6m5,2m310,70cm1479,23cm121,13cm2,3cm3), multi-select. (3) Freq repeater-freq-input (comma+dot, ±0.0125). (4) Radius: repeater-radius-toggle -> GPS (expo-location, benefit text + repeater-gps-button; denied->manual, blocked->repeater-open-settings) OR manual repeater-location-input + repeater-geocode-button (Nominatim). repeater-radius-slider 1-200km default 30. (5) Results repeater-count 'X Treffer', alphabetical(no radius)/by-distance(radius) with distance badge; pending backfill banner + repeater-refresh-button + auto-poll. Attribution repeater-attribution. Verified via screenshots (Zug autocomplete; 2m->310; +radius München 30km -> DB0ULR 7.7km + pending)."
 
+  - task: "Q-Codes module — new offline reference (Q-Codes + Betriebsabkürzungen unified searchable list)"
+    implemented: true
+    working: "NA"
+    file: "app/qcodes.tsx, src/qcodes/data.ts, src/modules/registry.ts"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Brand-new offline module (no backend). Hub tile qcodes now ENABLED (route /qcodes, subtitle 'Codes & Kürzel'). 64 entries (30 Q-Codes + 73/88 as abbr + 32 Betriebsabkürzungen). Screen: qcode-search-input (placeholder 'Code oder Stichwort suchen…') searches code+question+statement+practice+mnemonic+HIDDEN keywords simultaneously (live, all matches). Filter chips qcode-filter-all/qcode/abbr. Exam toggle qcode-exam-toggle ('Nur prüfungsrelevante anzeigen'). qcode-count 'X Einträge'. Cards qcode-item-<code>: code + type badge (Q-Code/Abkürzung) + 'Prüfung' badge when exam, Frage/Aussage lines, Praxis + Merkhilfe rows. Entry '99' rendered as WARNING (red border + alert icon + red text). Sorted alphabetically. Verified via screenshots: default 64; 'standort'->QTH (Frage/Aussage/Prüfung/Merkhilfe); 99 warning card."
+
 metadata:
   created_by: "main_agent"
   version: "1.1"
@@ -283,9 +295,7 @@ backend:
 
 test_plan:
   current_focus:
-    - "Repeater-Finder REWORK — unified filter search screen (text autocomplete + dynamic band chips + freq + radius)"
-    - "Repeater-Finder REWORK — bands/suggest/geocode endpoints + unified search (freq+bands+near+radius) + lazy Mongo coord cache"
-    - "Repeater-Finder — Detailansicht"
+    - "Q-Codes module — new offline reference (Q-Codes + Betriebsabkürzungen unified searchable list)"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -293,23 +303,14 @@ test_plan:
 agent_communication:
     -agent: "main"
     -message: |
-      REPEATER-FINDER REWORK — unified combinable filters on ONE screen (no tabs). Backend verified via curl.
-      BACKEND (regression + verify):
-        GET /api/repeater/bands -> {bands:[{band,count}]} only bands present (10m,6m,2m,70cm,23cm,13cm,3cm), freq-ascending.
-        GET /api/repeater/suggest?q=Zug -> results incl. DB0ZU 'Zugspitze' + OE7XZR; prefix, case-insensitive, matches call OR location tokens.
-        GET /api/repeater/search?bands=2m -> count 310, near=false, alphabetical by location.
-        GET /api/repeater/search?freq=145.6875 -> count ~53 (comma/dot handled client-side).
-        GET /api/repeater/search?bands=2m&near=48.137,11.575&radius=30 -> near=true, results have distanceKm sorted asc, pendingCoords>=0 (grows down as background worker fills; re-call to see more).
-        GET /api/repeater/geocode?q=München -> {lat,lon,display}. Rate-limited 1/s.
-        GET /api/repeater/detail?state_id=DE&id=<id> -> downlink/uplink/offset/lat/lon (unchanged).
-      FRONTEND (web preview):
-        /repeater: repeater-text-input 'Zug' -> repeater-suggest dropdown, tap repeater-suggest-item-<id> -> detail.
-        Band chips repeater-band-2m etc (from /bands) multi-select -> repeater-results + repeater-count '310 Treffer'.
-        repeater-freq-input accepts '145,600' AND '145.600'. Combine freq+band works.
-        repeater-radius-toggle ON -> shows benefit text + repeater-gps-button + manual repeater-location-input + repeater-geocode-button.
-          Manual 'München' -> geocode -> repeater-location-label + repeater-radius-slider (1-200, default 30). Results get distance badges, pending banner + repeater-refresh-button.
-        NOTE: GPS (repeater-gps-button) uses expo-location and generally does NOT work in web preview (browser geolocation blocked in iframe) — test MANUAL location on web; GPS is native-only.
-      Regression: Morse, Freq. Rechner, Rufzeichen, Bandplan tiles still open. Repeater tile subtitle now 'DACH · Umkreis'.
+      Q-CODES MODULE (new, offline, frontend-only — no backend). Test on /qcodes (hub tile tool-tile-qcodes).
+      - Default: qcode-count '64 Einträge', list alphabetical (73, 88, 99, ANT, ...). Filter chips qcode-filter-all/qcode/abbr.
+        qcode-filter-qcode -> only Q-Code type (excludes 73/88/99 and abbreviations). qcode-filter-abbr -> only abbreviations.
+      - Search qcode-search-input matches code AND hidden keywords: 'standort' -> exactly QTH (qcode-item-QTH) with FRAGE + AUSSAGE + 'Prüfung' badge + Merkhilfe. 'QRZ' -> QRZ. 'danke' -> TNX. 'verschwinde' -> 99.
+      - Exam toggle qcode-exam-toggle ON -> only entries with 'Prüfung' badge (e.g. QRL, QRZ, QTH present; QRA, CQ, 73 absent).
+      - Entry '99' (qcode-item-99) shown as WARNING card (red border + alert icon + red text), type badge 'Abkürzung'.
+      - qcode-search-clear clears the query. Regression: other hub tiles (morse, antenna, callsign, bandplan, repeater) still open.
+
 
 
 
