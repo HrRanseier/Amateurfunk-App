@@ -118,6 +118,11 @@ export default function FlugfunkScreen() {
             <MaterialCommunityIcons name="magnify" size={20} color={colors.onBrandPrimary} />
             <Text style={[styles.searchText, { color: colors.onBrandPrimary }]}>Suchen</Text>
           </Pressable>
+          {tab === "airport" && (
+            <Text style={[styles.umlautHint, { color: colors.onSurfaceMuted }]}>
+              Umlaute bitte umschreiben: ü = ue, ä = ae, ö = oe.
+            </Text>
+          )}
         </View>
 
         {loading && (
@@ -204,6 +209,7 @@ const styles = StyleSheet.create({
   unit: { fontSize: fontSize.lg, fontWeight: "800" },
   searchBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.sm, height: 50, borderRadius: radius.md },
   searchText: { fontSize: fontSize.lg, fontWeight: "800" },
+  umlautHint: { fontSize: fontSize.sm, lineHeight: 16, fontWeight: "600" },
 
   statusWrap: { flexDirection: "row", alignItems: "center", gap: spacing.md, padding: spacing.md },
   statusText: { flex: 1, fontSize: fontSize.base, fontWeight: "600", lineHeight: 20 },
