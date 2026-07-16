@@ -43,8 +43,8 @@ export default function HubScreen() {
           <Text testID="app-title" style={[styles.title, { color: colors.onSurface }]}>
             Funk Toolbox
           </Text>
-          <Text style={[styles.subtitle, { color: colors.onSurfaceMuted }]}>
-            by DJ 1 IR
+          <Text style={[styles.subtitle, { color: colors.onSurface }]}>
+            by DJ1IR
           </Text>
         </View>
         <Pressable
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
   headerText: { flex: 1 },
   infoBtn: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
   title: { fontSize: fontSize.xxl, fontWeight: "800", letterSpacing: 0.5 },
-  subtitle: { fontSize: fontSize.base, marginTop: 2 },
+  subtitle: { fontSize: fontSize.base, marginTop: 2, fontWeight: "700" },
   grid: {
     paddingHorizontal: spacing.lg,
     flexDirection: "row",

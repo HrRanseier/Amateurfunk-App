@@ -16,36 +16,12 @@ export type ToolModule = {
 
 export const modules: ToolModule[] = [
   {
-    id: "morse",
-    title: "Morsecode",
-    icon: "keyboard-outline",
-    route: "/morse",
-    enabled: true,
-    subtitle: "Text \u21C4 Morse",
-  },
-  {
-    id: "antenna",
-    title: "Freq. Rechner",
-    icon: "calculator-variant",
-    route: "/antenna",
-    enabled: true,
-    subtitle: "Länge \u21C4 Bänder",
-  },
-  {
     id: "callsign",
     title: "Rufzeichen",
     icon: "antenna",
     route: "/callsign",
     enabled: true,
     subtitle: "Callbook-Suche",
-  },
-  {
-    id: "bandplan",
-    title: "Bandplan",
-    icon: "chart-bar",
-    route: "/bandplan",
-    enabled: true,
-    subtitle: "KW · CB · Flugfunk",
   },
   {
     id: "repeater",
@@ -56,11 +32,35 @@ export const modules: ToolModule[] = [
     subtitle: "DACH · Umkreis",
   },
   {
+    id: "bandplan",
+    title: "Bandplan",
+    icon: "chart-bar",
+    route: "/bandplan",
+    enabled: true,
+    subtitle: "KW · CB · Flugfunk",
+  },
+  {
     id: "qcodes",
     title: "Q-Codes",
     icon: "alphabetical",
     route: "/qcodes",
     enabled: true,
     subtitle: "Codes & K\u00FCrzel",
+  },
+  {
+    id: "morse",
+    title: "Morsecode",
+    icon: "keyboard-outline",
+    route: "/morse",
+    enabled: true,
+    subtitle: "Text \u21C4 Morse",
+  },
+  {
+    id: "antenna",
+    title: "Ant-Rechner",
+    icon: "calculator-variant",
+    route: "/antenna",
+    enabled: true,
+    subtitle: "Länge \u21C4 Bänder",
   },
 ];
