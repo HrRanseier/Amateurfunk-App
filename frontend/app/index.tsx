@@ -85,8 +85,18 @@ export default function HubScreen() {
                 />
               </View>
               <View>
-                <Text style={[styles.tileTitle, { color: colors.onSurface }]}>{mod.title}</Text>
                 <Text
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.7}
+                  style={[styles.tileTitle, { color: colors.onSurface }]}
+                >
+                  {mod.title}
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.7}
                   style={[
                     styles.tileSubtitle,
                     { color: active ? colors.brand : colors.onSurfaceMuted },

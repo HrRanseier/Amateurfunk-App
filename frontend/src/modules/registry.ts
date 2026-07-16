@@ -25,7 +25,7 @@ export const modules: ToolModule[] = [
   },
   {
     id: "antenna",
-    title: "Antennenrechner",
+    title: "Freq. Rechner",
     icon: "calculator-variant",
     route: "/antenna",
     enabled: true,
