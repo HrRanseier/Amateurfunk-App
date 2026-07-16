@@ -111,6 +111,17 @@ user_problem_statement: |
   with injected CSS/JS hiding nav/address/activity/footer. Same theme/light-dark/layout as other modules.
 
 frontend:
+  - task: "GLOBAL DESIGN REFACTOR — Design switcher (Minimalist ↔ Dunkler Hintergrund), tablet max-width, gradient headers, dark text chips, ScreenBg wrapper across all screens"
+    implemented: true
+    working: "NA"
+    file: "src/theme/design.tsx, src/theme/useTheme.ts, src/theme/backgrounds.ts, src/theme/layout.ts, src/components/ScreenBg.tsx, src/components/ScreenHeader.tsx, app/about.tsx, app/index.tsx, app/callsign.tsx, app/qcodes.tsx, app/repeater/index.tsx, app/repeater/detail.tsx, app/morse.tsx, app/antenna.tsx, app/bandplan/*.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Massive UI refactor across 15+ files. New DesignProvider persists mode 'minimal' (auto light/dark) or 'darkbg' (fixed dark bg images 1-8 per module) in AsyncStorage (key funk_design_mode_v1). Settings screen (/about via about-button) has design-option-minimal / design-option-darkbg radio toggle. ScreenBg wrapper is root of every screen (renders bg image in darkbg / plain surface in minimal). ScreenHeader drops solid bar for a dark top gradient in darkbg. Tablet responsiveness: MAX_CONTENT_WIDTH=600 (centered forms/text via layout.centered), MAX_GRID_WIDTH=760 (hub grid). overlayChip() adds semi-transparent dark chip behind free-standing hint/source/disclaimer texts in darkbg for readability. Portrait lock. Smoke-tested via screenshot: hub renders in BOTH modes, settings toggle works, darkbg circuit-board bg + gradient header visible. NEEDS full regression: verify ScreenBg/max-width/text-chips did NOT break scrollviews, inputs, touch targets, list rendering across all 7 modules. FOCUS AREAS per user: (1) Morse Betrieb screen fixed pinned bottom input bar; (2) Repeater band filter chips multi-select layout; (3) Q-Codes + Rufzeichen scroll behavior of live autocomplete/result list."
   - task: "Rufzeichen module — hub tile active + navigation"
     implemented: true
     working: true
@@ -295,12 +306,34 @@ backend:
 
 test_plan:
   current_focus:
-    - "Q-Codes module — new offline reference (Q-Codes + Betriebsabkürzungen unified searchable list)"
+    - "GLOBAL DESIGN REFACTOR — Design switcher (Minimalist ↔ Dunkler Hintergrund), tablet max-width, gradient headers, dark text chips, ScreenBg wrapper across all screens"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
 agent_communication:
+    -agent: "main"
+    -message: |
+      GLOBAL DESIGN REFACTOR — full FRONTEND regression needed (web preview 390x844). This was a bulk edit across 15+ files
+      injecting a <ScreenBg> root wrapper + tablet max-width + dark text chips into EVERY screen. Goal: confirm NO regressions
+      were introduced (scrollviews, text inputs, touch targets, list rendering, navigation) in BOTH design modes.
+      STEPS:
+      1) Settings: from Hub tap about-button -> /about. Toggle design-option-darkbg then design-option-minimal (radio state changes,
+         persists). In darkbg the whole app shows dark circuit-board background images + gradient headers + white text.
+      2) Run each module in BOTH modes (switch via settings), verifying content is readable & interactive:
+         - Hub (/): 6 tiles render in 2-col grid, centered on wide screens, all navigate.
+         - Rufzeichen (/callsign): input auto-uppercases, Suchen button; on web the callsign-web-notice appears (native-only lookup).
+         - Repeater (/repeater): FOCUS -> band filter chips repeater-band-<key> multi-select still lays out & toggles; text autocomplete
+           repeater-suggest dropdown scrolls over the list; freq input; radius toggle reveals controls. Results list scrolls.
+         - Bandplan (/bandplan + /bandplan/amateur, /cb, /flugfunk): embedded Frequenz prüfen, tiles, sub-screens render.
+         - Q-Codes (/qcodes): FOCUS -> search live-match list scrolls; filter chips; exam toggle; 99 warning card intact.
+         - Morse (/morse): FOCUS -> chat-style layout with FIXED pinned bottom input bar must stay above keyboard / not overlap;
+           transcript scrolls; SettingsSheet modal opens.
+         - Antenne (/antenna): segmented control, inputs, result cards.
+      3) Confirm free-standing disclaimer/attribution texts sit on dark chips (readable) in darkbg mode.
+      Known/ignore: web-only console warnings shadow*/pointerEvents (pre-existing, non-blocking). Rufzeichen live lookup is native-only.
+      No backend changes in this task — SKIP backend (all green in iteration_9).
+
     -agent: "main"
     -message: |
       Q-CODES MODULE (new, offline, frontend-only — no backend). Test on /qcodes (hub tile tool-tile-qcodes).

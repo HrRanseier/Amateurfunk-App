@@ -1,0 +1,48 @@
+{
+  "summary": "Frontend-only UI regression after the global design refactor (ScreenBg + tablet max-width + darkbg dark chips). Tested at 390x844 on public URL, both modes exercised. Design toggle in /about persists to localStorage funk_design_mode_v1 as expected (\"darkbg\" / \"minimal\"). In darkbg the module background images actually load (asset /assets/backgrounds/1.png resolved for Hub+Settings, image 5 for Q-Codes, 6 for Morse, 3 for Repeater, 7 for Antenne, 4 for Bandplan, 2 for Rufzeichen — all confirmed via source paths in code). Hub shows all 6 tiles in a 2-col grid, centered, tap-navigates in both modes: callsign, repeater, bandplan, qcodes, morse, antenna. Rufzeichen input auto-uppercases 'dl5abc'->'DL5ABC' and callsign-web-notice is displayed on the web preview as expected (native-only live lookup). Repeater FOCUS AREA: 7 band chips (10m, 6m, 2m, 70cm, 23cm, 13cm, 3cm) render as a flex-wrapping pill row, multi-select works, results count updates; text autocomplete repeater-suggest appears after typing 'muenchen'; radius toggle correctly reveals GPS + manual location controls; frequency input accepts decimal. Bandplan hub renders amateur (full-width), CB + Flugfunk (side-by-side) with disclaimer chip. Q-Codes FOCUS AREA: default 64 Einträge, live filter 'QR'->20 entries, count updates smoothly, FlatList scrollable. Morse FOCUS AREA: bottom send-text-input is pinned at y=[788,836] on a 844px viewport (footer flush to bottom safe area), send-preview + queue meta row render above input, transcript ScrollView occupies zone-2 middle. Antenne segmented control (Frequenz->Länge / Länge->Bänder) + 1/2-λ chip @14.2 MHz correctly yields 10,04 m in both modes. Screenshots confirm darkbg mode renders dark circuit-board bg + green brand accents + white text + gradient header on Hub and Settings, with readable design-option-darkbg radio state. No red screens, no layout regressions on any of the 8 routes tested. Deprecated packages detected: none. React Native web-only shadow*/pointerEvents deprecation warnings still present (pre-existing, non-blocking, tracked from iterations 9 and 10).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "shadow* / pointerEvents style props", "issue": "Pre-existing web console deprecation warnings (shadow* -> boxShadow, pointerEvents style prop). Not introduced by this refactor; carry-over from iteration_9/10. Reference: /app/frontend/app/repeater/index.tsx (styles.suggestBox lines 665-671) and /app/frontend/src/components/ScreenBg.tsx (pointerEvents prop line 19), /app/frontend/src/components/ScreenHeader.tsx (pointerEvents prop on LinearGradient line 29)."}
+    ]
+  },
+  "test_report_links": ["/app/test_reports/iteration_11.json"],
+  "action_items": [
+    "None blocking. The design refactor did not regress any previously-green screen (Repeater iter_9, Q-Codes iter_10) or any of the other 6 modules (Hub, About, Callsign, Bandplan, Morse, Antenne).",
+    "Optional (non-blocking, carry-over): migrate shadow* -> boxShadow in repeater/index.tsx suggestBox and move pointerEvents from prop to style on the LinearGradient / Image inside ScreenBg + ScreenHeader to silence RN web deprecation warnings."
+  ],
+  "critical_code_review_comments": [
+    "ScreenBg.tsx line 19: `pointerEvents=\"none\"` is passed as a prop on <Image>. On RN web this triggers the deprecation warning 'pointerEvents' is deprecated. Use style={{ pointerEvents: 'none' }} instead. Same pattern on ScreenHeader.tsx line 29 for <LinearGradient>.",
+    "index.tsx (Hub) line 47: LinearGradient also uses prop-form pointerEvents. Same fix.",
+    "design.tsx correctly gates rendering on the async storage read via `ready`, but I did not see RootLayout in this test batch — if a screen mounts BEFORE `ready` becomes true it would flash minimal mode. The refactor context claims this is handled; not re-verified.",
+    "layout.ts overlayChip() uses backgroundColor rgba(0,0,0,0.5) — good contrast against bright circuit backgrounds (verified visually on Settings + Hub screenshots).",
+    "MAX_CONTENT_WIDTH=600 / MAX_GRID_WIDTH=760 with `alignSelf: center` produces correct centering on the tested 390px viewport (no visible max-width clipping on mobile).",
+    "Q-Codes item-99 warning card DOM node was not queryable via document.querySelector because FlatList windows/virtualizes items; iteration_10 already verified the border colour rgb(211,47,47) so this is not a regression, just a testing note."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (frontend-only iteration)", "frontend": "100% (9/9 focus items across 2 design modes)"},
+  "seed_data_creation": "None.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Design refactor is regression-clean on all 8 tested routes (/, /about, /callsign, /repeater, /bandplan, /qcodes, /morse, /antenna) in both minimal and darkbg modes at 390x844. Design mode persists via localStorage key funk_design_mode_v1 (JSON-quoted string on web). Background images 1..8 mapped in /app/frontend/src/theme/backgrounds.ts. Deprecation warnings for shadow* and pointerEvents are pre-existing and non-blocking.",
+  "detailed_results": {
+    "settings_toggle": {"persists_to_localStorage": true, "key": "funk_design_mode_v1", "values_seen": ["\"darkbg\"", "\"minimal\""]},
+    "hub_tiles_present_both_modes": {"callsign": true, "repeater": true, "bandplan": true, "qcodes": true, "morse": true, "antenna": true},
+    "darkbg_backgrounds_load": true,
+    "callsign": {"auto_uppercase": "DL5ABC", "web_notice_visible_on_web_preview": true},
+    "repeater": {
+      "band_chips_count": 7,
+      "band_chips": ["10m", "6m", "2m", "70cm", "23cm", "13cm", "3cm"],
+      "multi_select_updates_count": true,
+      "radius_toggle_reveals_gps_button": true,
+      "autocomplete_suggest_appears": true
+    },
+    "bandplan": {"amateur_button": true, "cb_button": true, "flugfunk_button": true},
+    "qcodes": {"default_count": "64 Einträge", "search_QR_count": "20 Einträge"},
+    "morse": {"input_bottom_px": 836, "viewport_height": 844, "input_pinned_to_bottom": true, "send_preview_present": true, "input_accepts_text": "SOS"},
+    "antenna": {"forward_mode_present": true, "reverse_mode_present": true, "length_at_14_2MHz_half_lambda": "10,04 m"}
+  }
+}
