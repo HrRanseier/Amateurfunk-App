@@ -121,3 +121,17 @@ Android-App für Amateurfunker. Hub-and-Module-Architektur: zentraler Startbilds
 - [x] `app.json` `expo.name` → **"Funk Toolbox"** (Homescreen-Label der installierten App). `slug` bewusst auf "frontend" belassen (an EAS `projectId` gebunden — Änderung bräche die Publish-/Build-Verknüpfung; das Label hängt an `name`, nicht am Slug).
 - [x] `package.json` `author` → "Ingo Rummel (DJ1IR)". `eas.json` hat keinen Submit-Block; Store-Herausgebername kommt vom Entwickler-Account beim Publish.
 - [x] Neuer Screen **`app/about.tsx`** ("Über die App"), erreichbar über Info-Icon oben rechts am Hub (`about-button`): App-Name, Version (auto via `expo-constants`, nicht hartkodiert), "Entwickelt von DJ1IR, Ingo Rummel", Platzhalter-Abschnitt "Kontakt – noch zu ergänzen". Verifiziert via Screenshot.
+
+## Update 2026-07 (GLOBALER DESIGN-UMBAU — Design-Umschalter, Tablet-Layout, Dunkler Hintergrund) — getestet grün iteration_11
+- [x] **Design-Umschalter** in Einstellungen (`app/about.tsx`, `design-option-minimal` / `design-option-darkbg`). Persistiert via `DesignProvider` (`src/theme/design.tsx`) in AsyncStorage (Key `funk_design_mode_v1`); RootLayout wartet auf `ready` bevor die UI rendert, damit der richtige Modus beim ersten Frame steht.
+  - **Minimalistisch:** automatisches Hell-/Dunkel-Design nach Systemeinstellung (bisheriges Verhalten).
+  - **Dunkler Hintergrund:** feste dunkle Platinen-Hintergrundbilder (1–8, je Modul), dunkle Palette erzwungen (weiße Schrift). Mapping in `src/theme/backgrounds.ts` (1 Hub+Einstellungen, 2 Rufzeichen, 3 Repeater, 4 Bandplan, 5 Q-Codes, 6 Morse, 7 Antenne, 8 CB/Flugfunk).
+- [x] **`ScreenBg`-Wrapper** (`src/components/ScreenBg.tsx`) als Wurzel jeder Screen-Datei: rendert im darkbg-Modus das Modul-Bild (cover, memory-disk-Cache), im minimal-Modus eine schlichte Flächenfarbe → Layout unverändert. **Nicht entfernen/umgehen** beim Bearbeiten von Screens.
+- [x] **`ScreenHeader`** ersetzt im darkbg-Modus die solide Leiste durch einen weichen dunklen Top-Gradient (Bilder sind oben am hellsten), Titel + Zurück-Pfeil in Weiß.
+- [x] **Tablet-Responsivität** (`src/theme/layout.ts`): `MAX_CONTENT_WIDTH=600` (Text-/Formularbereiche via `centered`), `MAX_GRID_WIDTH=760` (Hub-Grid) — zentriert statt volle Breite auf breiten Screens.
+- [x] **`overlayChip(darkbg)`**: halbtransparenter dunkler Chip hinter frei stehenden Hinweis-/Quellen-/Disclaimer-Texten für Lesbarkeit über den hellen Platinen-Symbolen.
+- [x] Portrait-Lock. Über 15 Dateien umgebaut. **Regression grün (iteration_11):** alle 8 Routen in BEIDEN Modi geprüft — Morse fixe untere Eingabeleiste, Repeater Band-Chips (Mehrfachauswahl), Q-Codes/Rufzeichen Scroll-Verhalten alle intakt; keine kaputten ScrollViews/Inputs/Touch-Ziele.
+
+## Offene / optionale Aufgaben
+- Optional (nicht blockierend, web-only Konsolen-Warnungen): `shadow*` → `boxShadow` in `app/repeater/index.tsx` (suggestBox); `pointerEvents`-Prop → `style.pointerEvents` in `ScreenBg`/`ScreenHeader`/`app/index.tsx`.
+- Optional: `server.py` (>600 Zeilen, 3 Domains) in Router aufteilen.
