@@ -79,3 +79,18 @@ Android-App für Amateurfunker. Hub-and-Module-Architektur: zentraler Startbilds
 - [x] **Forward layout reordered:** removed the separate numbered "Sendefrequenz" step card — frequency is now typed directly in the prominent top field (placeholder "Sendefrequenz eingeben", ruler icon + MHz). Order: Frequenz-Feld → Lambda-Anteil → DRAHTLÄNGE result (result card now sits below the lambda selection). Verified via screenshots (empty + 14.200/λ/2 → 10,04 m).
 - [x] Fixed reverse-tab crash (leftover `renderAdvanced()` call after the advanced section was removed). Frequency field turned borderless to fit its card.
 - [x] **Reverse mode expanded to multi-form usage:** `resonantBands(L, vf)` now checks λ/4 (coeff 75), 5/8 λ (187.5) and the full λ/2 harmonic series n·150 (n=1 λ/2, n=2 1 λ, n≥3 harmonics), f = coeff·VF/L. Added **CB 11 m band (26.965–27.405 MHz)** to `HAM_BANDS`. Each hit shows Band · Frequenz · Bauform, sorted by frequency asc. Example 6,60 m → 11 m (CB) · 26,989 MHz · 5/8 λ. Unit tests `scripts/antenna-selftest.ts` → 19/19 pass; UI verified via screenshots (6,60 m + 20,10 m).
+
+
+## Update 2026-07 (Repeater-Finder module — Phase 1: Frequenzsuche DACH + Detailansicht)
+- [x] New ACTIVE hub tile **Repeater** (`src/modules/registry.ts`, icon `access-point-network`, subtitle "DACH · Frequenz", route `/repeater`, testID `tool-tile-repeater`), inserted before the disabled Q-Codes tile.
+- [x] **Backend (`backend/server.py`, NO API key):** scrapes RepeaterBook `row_repeaters/Display_SS.php` for DE/AT/CH into a 24h in-memory cache, **warmed on startup** (`@app.on_event("startup")` → ~1939 repeaters). Handoff `JSONDecodeError` is RESOLVED — the detail parser is regex/line-based (no `json.loads`).
+  - `GET /api/repeater/search?freq=` → matches within ±0.0125 MHz; each item: id, state_id, call, freq, offsetDir, tone, location, modes, status, countryCode. (145.6875 → 53: DE39/AT8/CH6; 145.600 → 54.)
+  - `GET /api/repeater/detail?state_id=&id=` → downlink, uplink, offset, bandwidth, sponsor, lat/lon, call, location, country. Bad params → HTTP 400.
+- [x] **Search screen (`app/repeater/index.tsx`):** MHz input (`repeater-freq-input`) accepts BOTH comma and dot decimals; `repeater-search-button` → `repeater-results` list of tappable cards (`repeater-item-<id>`) with status dot (green on-air/red off-air/amber unknown), call, country badge, freq (comma), Ablage, location, mode + tone tags. Optional multi-select mode chips (`repeater-chip-fm/dmr/dstar/c4fm`) filter client-side (fm/dmr/d-star/fusion). Loading/error/empty states.
+- [x] **Detail screen (`app/repeater/detail.tsx`):** instant list fields + augmented backend fetch. Cards: overview, FREQUENZDATEN (Downlink/Uplink/Offset/Ablage/Ton-CTCSS/Bandbreite/Betriebsart), STANDORT (location, coords, "In Karte öffnen" → Google Maps via `Linking`), BETREIBER (sponsor). Tone prefers richer list value.
+- [x] **Attribution** "Daten: RepeaterBook.com" (links to repeaterbook.com) shown on results (`repeater-attribution`) and detail (`repeater-detail-attribution`).
+- [x] Tested green iteration_8 (backend 6/6 pytest `backend/tests/test_repeater.py` + full frontend flow + regressions). Lint clean.
+
+## Next Tasks
+- **Repeater-Finder Phase 2 — "In meiner Nähe"** (P1): `expo-location` foreground permission → GPS coords, distance calc against cached DACH data (or scrape `radius_result.php`), 1–200 km radius slider, Band/Mode filters.
+- **Q-Codes** module (P2, currently disabled placeholder tile).
