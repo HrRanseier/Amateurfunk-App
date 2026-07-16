@@ -135,9 +135,8 @@ export function cbBandFreq(band: CbBandLetter, ch: number): number | null {
 
 export const CB_BAND_A_OK = "Standard-Kanal, legal in Deutschland nutzbar";
 export const CB_BAND_BJ_WARN =
-  "Außerhalb der deutschen CB-Funk-Zuteilung. Diese Frequenzen stammen aus Export-Kanalbelegungen " +
-  "bestimmter Funkgeräte, sind aber nicht durch die deutsche Allgemeinzuteilung (Vfg 21/2021) abgedeckt. " +
-  "Teilweise Überschneidung mit anderen zugewiesenen Funkdiensten (z. B. dem 10-Meter-Amateurfunkband).";
+  "Außerhalb der deutschen CB-Funk-Zuteilung. Diese Frequenzen stammen aus Export-Kanalbelegungen. " +
+  "Benutzung ist offiziell nicht erlaubt.";
 
 export type CbCheckResult =
   | { kind: "channel"; ch: number; freqMHz: number; power: string; data: boolean }

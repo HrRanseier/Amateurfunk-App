@@ -336,8 +336,8 @@ const styles = StyleSheet.create({
   tagBox: { flexDirection: "row", alignItems: "center", alignSelf: "flex-start", gap: 6, borderRadius: radius.pill, paddingHorizontal: spacing.md, paddingVertical: 4 },
   tagText: { fontSize: fontSize.sm, fontWeight: "800" },
 
-  legalBox: { flexDirection: "row", gap: spacing.sm, borderRadius: radius.md, borderWidth: 1, padding: spacing.md, marginTop: spacing.xs },
-  legalText: { flex: 1, fontSize: fontSize.sm, lineHeight: 18, fontWeight: "600" },
+  legalBox: { flexDirection: "row", gap: spacing.sm, borderRadius: radius.md, borderWidth: 1, padding: spacing.sm, marginTop: spacing.xs },
+  legalText: { flex: 1, fontSize: 11, lineHeight: 15, fontWeight: "600" },
   tripleBox: { flexDirection: "row", alignItems: "center", gap: spacing.sm, borderRadius: radius.md, borderWidth: 1, padding: spacing.md, marginTop: spacing.xs },
   tripleText: { flex: 1, fontSize: fontSize.base, fontWeight: "800" },
 });
