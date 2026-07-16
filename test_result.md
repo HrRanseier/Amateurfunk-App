@@ -227,6 +227,17 @@ frontend:
         -working: "NA"
         -agent: "main"
         -comment: "Detail screen shows list-provided fields instantly then augments via GET /api/repeater/detail?state_id=&id=. Cards: overview (call, status, country, big freq), FREQUENZDATEN (Downlink/Uplink/Offset/Ablage/Ton-CTCSS/Bandbreite/Betriebsart), STANDORT (location, coords, 'In Karte öffnen' -> google maps), BETREIBER (sponsor if present). Tone prefers richer list value over detail parse. testID repeater-detail. Attribution link present. Verified via screenshot (DB0AL: Downlink 145.5875, Uplink 144.98125, Offset -0.600, coords)."
+  - task: "Repeater-Finder REWORK — unified filter search screen (text autocomplete + dynamic band chips + freq + radius)"
+    implemented: true
+    working: "NA"
+    file: "app/repeater/index.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Full rewrite: single screen, all filters combinable, no tabs. (1) Text autocomplete repeater-text-input debounced -> GET /api/repeater/suggest?q=, dropdown repeater-suggest + repeater-suggest-item-<id>; tap -> /repeater/detail. Prefix match on location/call (case-insensitive); 'Zug' -> Zugspitze verified. (2) Dynamic band chips repeater-band-<key> from GET /api/repeater/bands (only present bands + counts: 10m19,6m5,2m310,70cm1479,23cm121,13cm2,3cm3), multi-select. (3) Freq repeater-freq-input (comma+dot, ±0.0125). (4) Radius: repeater-radius-toggle -> GPS (expo-location, benefit text + repeater-gps-button; denied->manual, blocked->repeater-open-settings) OR manual repeater-location-input + repeater-geocode-button (Nominatim). repeater-radius-slider 1-200km default 30. (5) Results repeater-count 'X Treffer', alphabetical(no radius)/by-distance(radius) with distance badge; pending backfill banner + repeater-refresh-button + auto-poll. Attribution repeater-attribution. Verified via screenshots (Zug autocomplete; 2m->310; +radius München 30km -> DB0ULR 7.7km + pending)."
 
 metadata:
   created_by: "main_agent"
@@ -235,6 +246,17 @@ metadata:
   run_ui: false
 
 backend:
+  - task: "Repeater-Finder REWORK — bands/suggest/geocode endpoints + unified search (freq+bands+near+radius) + lazy Mongo coord cache"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: true
+        -agent: "main"
+        -comment: "NEW: GET /api/repeater/bands -> only bands present in DACH cache w/ counts (freq-ascending). GET /api/repeater/suggest?q= -> prefix match (call OR location tokens, case-insensitive), returns full repeater dicts. GET /api/repeater/geocode?q= -> Nominatim proxy, server-side rate-limit 1/s + descriptive UA (NOMINATIM_UA). GET /api/repeater/search now accepts freq, bands=csv, near=lat,lon, radius (default 30) — intersection; no near -> full list sorted alphabetically by location w/ count; near -> haversine distance filter, sorted by distance, distanceKm attached, pendingCoords count. LAZY COORDS: coords fetched only when a repeater appears in a real search result, persisted in MongoDB collection repeater_coords + mirrored in _coords; bounded synchronous warm (cap 30) on radius query + background worker (throttled ~0.3s) fills the rest. Verified via curl: bands dynamic; suggest 'Zug'->Zugspitze; bands=2m->310; geocode München; near München 2m 30km -> DB0ULR 7.7km (pending grows down as worker fills); Mongo persisted 122+ coords."
   - task: "Flugfunk OpenAIP proxy — airport search + reverse frequency lookup"
     implemented: true
     working: true
@@ -261,9 +283,9 @@ backend:
 
 test_plan:
   current_focus:
-    - "Repeater-Finder — Frequenzsuche DACH (search screen)"
+    - "Repeater-Finder REWORK — unified filter search screen (text autocomplete + dynamic band chips + freq + radius)"
+    - "Repeater-Finder REWORK — bands/suggest/geocode endpoints + unified search (freq+bands+near+radius) + lazy Mongo coord cache"
     - "Repeater-Finder — Detailansicht"
-    - "Repeater-Finder — RepeaterBook DACH scrape/cache + search + detail endpoints"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -271,17 +293,24 @@ test_plan:
 agent_communication:
     -agent: "main"
     -message: |
-      REPEATER-FINDER Phase 1 (Frequenzsuche DACH + Detailansicht). Backend confirmed working (warmup 1939 reps).
-      BACKEND (already verified via curl/python, please regression only):
-        GET /api/repeater/search?freq=145.6875 -> count ~53, results across DE/AT/CH, each with call/freq/modes/tone/status.
-        GET /api/repeater/search?freq=145.600 -> 54. GET /api/repeater/detail?state_id=DE&id=<id from search> -> downlink/uplink/offset/lat/lon.
-      FRONTEND (web preview): Hub tile 'tool-tile-repeater' -> /repeater.
-        Search: repeater-freq-input accepts BOTH '145,600' and '145.600' (comma+dot). repeater-search-button -> repeater-results list.
-          Cards repeater-item-<id> are tappable. Mode chips repeater-chip-fm/dmr/dstar/c4fm filter the list client-side (multi-select toggle).
-          Invalid input (e.g. empty/letters) -> button disabled; a bad number shows repeater-error. No match -> repeater-empty.
-        Detail: tapping a card opens /repeater/detail (testID repeater-detail) with Downlink/Uplink/Offset/Ablage/Ton/Bandbreite/Betriebsart,
-          Standort + Koordinaten + 'In Karte öffnen' (repeater-map-button), Sponsor (if any), attribution link repeater-detail-attribution.
-      Regression: Morse, Freq. Rechner, Rufzeichen, Bandplan hub tiles still open.
+      REPEATER-FINDER REWORK — unified combinable filters on ONE screen (no tabs). Backend verified via curl.
+      BACKEND (regression + verify):
+        GET /api/repeater/bands -> {bands:[{band,count}]} only bands present (10m,6m,2m,70cm,23cm,13cm,3cm), freq-ascending.
+        GET /api/repeater/suggest?q=Zug -> results incl. DB0ZU 'Zugspitze' + OE7XZR; prefix, case-insensitive, matches call OR location tokens.
+        GET /api/repeater/search?bands=2m -> count 310, near=false, alphabetical by location.
+        GET /api/repeater/search?freq=145.6875 -> count ~53 (comma/dot handled client-side).
+        GET /api/repeater/search?bands=2m&near=48.137,11.575&radius=30 -> near=true, results have distanceKm sorted asc, pendingCoords>=0 (grows down as background worker fills; re-call to see more).
+        GET /api/repeater/geocode?q=München -> {lat,lon,display}. Rate-limited 1/s.
+        GET /api/repeater/detail?state_id=DE&id=<id> -> downlink/uplink/offset/lat/lon (unchanged).
+      FRONTEND (web preview):
+        /repeater: repeater-text-input 'Zug' -> repeater-suggest dropdown, tap repeater-suggest-item-<id> -> detail.
+        Band chips repeater-band-2m etc (from /bands) multi-select -> repeater-results + repeater-count '310 Treffer'.
+        repeater-freq-input accepts '145,600' AND '145.600'. Combine freq+band works.
+        repeater-radius-toggle ON -> shows benefit text + repeater-gps-button + manual repeater-location-input + repeater-geocode-button.
+          Manual 'München' -> geocode -> repeater-location-label + repeater-radius-slider (1-200, default 30). Results get distance badges, pending banner + repeater-refresh-button.
+        NOTE: GPS (repeater-gps-button) uses expo-location and generally does NOT work in web preview (browser geolocation blocked in iframe) — test MANUAL location on web; GPS is native-only.
+      Regression: Morse, Freq. Rechner, Rufzeichen, Bandplan tiles still open. Repeater tile subtitle now 'DACH · Umkreis'.
+
 
 
 agent_communication:

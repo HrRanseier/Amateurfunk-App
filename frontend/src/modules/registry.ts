@@ -53,7 +53,7 @@ export const modules: ToolModule[] = [
     icon: "access-point-network",
     route: "/repeater",
     enabled: true,
-    subtitle: "DACH · Frequenz",
+    subtitle: "DACH · Umkreis",
   },
   {
     id: "qcodes",

@@ -1,0 +1,67 @@
+{
+  "summary": "Reworked Repeater-Finder passes end-to-end. Backend 15/15 pytest green (bands, suggest, search with combinable filters + radius, geocode, detail regression, MongoDB coord persistence). Frontend on 390x844 mobile: hub tiles all navigate; /repeater renders header 'Repeater-Finder'; typing 'Zug' shows repeater-suggest with 4 items (top row DB0ZU / Zugspitze / 2m); band chips render dynamically with real counts (10m 19, 6m 5, 2m 310, 70cm 1479, 23cm 121, 13cm 2, 3cm 3) and 2m selected shows '310 Treffer'; freq input '145,600' and '145.600' both narrow to '54 Treffer' when combined with 2m and to '54 Treffer' alone; radius toggle reveals GPS button + location input + geocode button; 'München' geocodes -> label 'München' appears + repeater-radius-slider at default 30 km; near query returns cards with a green distance badge (e.g. DB0ULR 7.7 km) and result line '1 Treffer · ≤ 30 km'; 'Aktualisieren' (repeater-refresh-button) appears while pendingCoords>0; toggling radius OFF returns to '310 Treffer' alphabetical. Tapping a suggestion navigates to /repeater/detail (repeater-detail visible, DB0ZU/Zugspitze, Bayern County, DE 145.7250 MHz shown).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "shadow* style props", "issue": "Console warning: '\"shadow*\" style props are deprecated. Use \"boxShadow\".' Emitted from the suggestBox in /app/frontend/app/repeater/index.tsx (styles.suggestBox uses shadowColor/shadowOpacity/shadowRadius/shadowOffset). Migrate to boxShadow or wrap in Platform.select so web uses boxShadow and native keeps shadow*."},
+      {"component": "pointerEvents prop", "issue": "Console warning: 'props.pointerEvents is deprecated. Use style.pointerEvents'. Likely originates from an ancestor component (KeyboardAwareScrollView / react-native-keyboard-controller or similar). Move pointerEvents to style if it appears in project code; if internal to a library, note the library version."}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_repeater.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Optional: migrate shadow* style props to boxShadow in repeater/index.tsx styles.suggestBox to silence the RN web deprecation warning.",
+    "Optional: audit any pointerEvents prop usage and move it to style.pointerEvents."
+  ],
+  "critical_code_review_comments": [
+    "server.py has grown to 625 lines with three feature domains (status/flugfunk/repeater) sharing one _CACHE_TTL. Splitting the repeater block into backend/routers/repeater.py + backend/services/repeaterbook.py would help before more features land.",
+    "In /api/repeater/search, when both `freq` and `bands` are combined, the band membership is checked via the pre-computed `r['band']`. That's consistent, but note that a query like `freq=145.6875&bands=70cm` will return count=0 silently (freq falls in 2m). Consider surfacing a hint or a validation error if this ever confuses users.",
+    "Nominatim /api/repeater/geocode enforces the 1 req/s rate limit via a single global lock which is correct, but there is no per-IP guard; a burst of client requests will queue on the server. Consider a lightweight LRU (query -> {lat,lon,display}) cache to avoid re-geocoding common German city names."
+  ],
+  "updated_files": ["/app/backend/tests/test_repeater.py"],
+  "success_rate": {"backend": "100% (15/15)", "frontend": "100%"},
+  "seed_data_creation": "None. RepeaterBook DACH cache warmed on startup; repeater_coords MongoDB collection is populated lazily by search traffic.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Public URL https://funk-toolbox.preview.emergentagent.com, mobile 390x844. Backend cache warms at supervisor startup; /api/repeater/bands + /api/repeater/search return in <200 ms. Radius flow was validated with manual location (Nominatim geocode 'München' -> ~48.14/11.58); GPS in web preview is not reliable (browser geolocation is blocked in iframe) — do NOT fail radius tests on that. The `pendingCoords` count decreases over successive calls as the background _coord_worker backfills MongoDB collection repeater_coords (already verified: count>0 after a radius query). Frontend testIDs used: tool-tile-{morse,antenna,callsign,bandplan,repeater}, repeater-text-input, repeater-text-clear, repeater-suggest, repeater-suggest-item-<id>, repeater-band-<band>, repeater-freq-input, repeater-freq-clear, repeater-radius-toggle, repeater-gps-button, repeater-location-input, repeater-geocode-button, repeater-location-label, repeater-location-change, repeater-radius-slider, repeater-refresh-button, repeater-results, repeater-count, repeater-item-<id>, repeater-attribution, repeater-detail.",
+  "detailed_results": {
+    "backend": {
+      "pytest_total": 15,
+      "pytest_passed": 15,
+      "bands_counts_observed": {"10m": 19, "6m": 5, "2m": 310, "70cm": 1479, "23cm": 121, "13cm": 2, "3cm": 3},
+      "suggest_zug_top": "DB0ZU / Zugspitze / 2m",
+      "search_bands_2m_count": 310,
+      "search_freq_145_6875_count_range": "40-70 (tolerance)",
+      "search_near_munich_2m_r30": {"near": true, "distanceKm_all_<=_30": true, "sorted_asc": true},
+      "search_near_invalid_coords": 400,
+      "geocode_muenchen": {"lat_range": "47.5-48.5", "lon_range": "11.0-12.0"},
+      "detail_regression": "downlink/uplink/offset present",
+      "repeater_coords_mongo_count": ">0 after radius query"
+    },
+    "frontend": {
+      "hub_tiles_visible": ["morse", "antenna", "callsign", "bandplan", "repeater"],
+      "header": "Repeater-Finder",
+      "autocomplete_zug": 4,
+      "band_chips_render": true,
+      "band_2m_count_label": "310",
+      "count_2m_only": "310 Treffer",
+      "count_2m_plus_comma_145,600": "54 Treffer",
+      "count_2m_plus_dot_145.600": "54 Treffer",
+      "count_only_145.600": "54 Treffer",
+      "radius_reveal": ["repeater-gps-button", "repeater-location-input", "repeater-geocode-button"],
+      "geocode_muenchen_label": "München",
+      "radius_slider_default": 30,
+      "radius_result_count_line": "1 Treffer · ≤ 30 km",
+      "distance_badge_km": 7.7,
+      "refresh_button_visible": true,
+      "radius_off_returns_full_list": "310 Treffer",
+      "suggestion_tap_navigates_to_detail": true,
+      "detail_labels_visible": ["Downlink", "Uplink", "Offset", "Ablage", "Ton / CTCSS", "Bandbreite", "Betriebsart", "Standort", "Koordinaten"]
+    }
+  }
+}

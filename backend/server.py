@@ -6,7 +6,8 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional
+import math
 import uuid
 import time as _time
 import re
@@ -163,6 +164,141 @@ RB_FREQ_TOL = 0.0125 + 1e-9
 _rb_cache: dict = {"ts": 0.0, "repeaters": []}
 _rb_lock = asyncio.Lock()
 
+# Amateur-radio band boundaries (MHz). A frequency is tagged with the first
+# matching band; bands are surfaced to the app dynamically (only those that
+# actually occur in the DACH cache). Ordered low→high frequency (10m … 3cm).
+RB_BANDS = [
+    ("10m", 28.0, 29.7),
+    ("6m", 50.0, 54.0),
+    ("4m", 70.0, 70.5),
+    ("2m", 144.0, 148.0),
+    ("1.25m", 219.0, 225.0),
+    ("70cm", 420.0, 450.0),
+    ("33cm", 900.0, 930.0),
+    ("23cm", 1240.0, 1300.0),
+    ("13cm", 2300.0, 2450.0),
+    ("9cm", 3300.0, 3500.0),
+    ("6cm", 5650.0, 5925.0),
+    ("3cm", 10000.0, 10500.0),
+]
+
+
+def _band_for_freq(f: float) -> str:
+    for key, lo, hi in RB_BANDS:
+        if lo <= f <= hi:
+            return key
+    return ""
+
+
+def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    r = 6371.0
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dp = math.radians(lat2 - lat1)
+    dl = math.radians(lon2 - lon1)
+    a = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+    return 2 * r * math.asin(math.sqrt(a))
+
+
+# Coordinate cache. Persisted in MongoDB (collection repeater_coords) and
+# mirrored in memory. Populated LAZILY: a repeater's coords are fetched (and
+# stored forever) only the first time it appears in a real user search result.
+_coords: dict = {}          # "DE-123" -> (lat, lon)
+_coords_seen: set = set()   # keys already known or queued (dedupe)
+_coord_queue: "Optional[asyncio.Queue]" = None
+
+# OpenStreetMap Nominatim (manual location fallback). Keyless, but must be
+# rate-limited to <=1 req/s and send a descriptive User-Agent.
+NOMINATIM_UA = "FunkToolbox/1.0 (Amateur Radio Repeater Finder)"
+_nominatim_lock = asyncio.Lock()
+_nominatim_last = 0.0
+
+
+async def _load_coords_from_db():
+    async for doc in db.repeater_coords.find({}, {"_id": 1, "lat": 1, "lon": 1}):
+        _coords[doc["_id"]] = (doc["lat"], doc["lon"])
+        _coords_seen.add(doc["_id"])
+
+
+async def _fetch_coord(hc: httpx.AsyncClient, state_id: str, rid: str) -> bool:
+    try:
+        r = await hc.get(f"{RB_BASE}/details.php", params={"state_id": state_id, "ID": rid})
+        if r.status_code == 200:
+            d = _parse_rb_detail(r.text)
+            if "lat" in d and "lon" in d:
+                key = f"{state_id}-{rid}"
+                _coords[key] = (d["lat"], d["lon"])
+                await db.repeater_coords.update_one(
+                    {"_id": key},
+                    {"$set": {"lat": d["lat"], "lon": d["lon"], "ts": _time.time()}},
+                    upsert=True,
+                )
+                return True
+    except Exception:
+        pass
+    return False
+
+
+async def _coord_worker():
+    async with httpx.AsyncClient(
+        timeout=30, headers={"User-Agent": RB_UA}, follow_redirects=True
+    ) as hc:
+        while True:
+            try:
+                state_id, rid = await _coord_queue.get()
+                if f"{state_id}-{rid}" not in _coords:
+                    await _fetch_coord(hc, state_id, rid)
+                _coord_queue.task_done()
+                await asyncio.sleep(0.3)  # polite throttle
+            except Exception:
+                await asyncio.sleep(0.5)
+
+
+def _enqueue_coords(items: list):
+    if _coord_queue is None:
+        return
+    for r in items:
+        key = f"{r['state_id']}-{r['id']}"
+        if key in _coords_seen:
+            continue
+        _coords_seen.add(key)
+        try:
+            _coord_queue.put_nowait((r["state_id"], r["id"]))
+        except asyncio.QueueFull:
+            _coords_seen.discard(key)
+            break
+
+
+async def _warm_coords_sync(cand: list, cap: int = 30, deadline: float = 8.0):
+    """Bounded synchronous coord fetch so a fresh radius query returns useful
+    results immediately (small freq/band sets fully resolve); the rest is left
+    to the background worker."""
+    missing = [r for r in cand if f"{r['state_id']}-{r['id']}" not in _coords][:cap]
+    if not missing:
+        return
+    sem = asyncio.Semaphore(10)
+    async with httpx.AsyncClient(
+        timeout=20, headers={"User-Agent": RB_UA}, follow_redirects=True
+    ) as hc:
+        async def one(r):
+            _coords_seen.add(f"{r['state_id']}-{r['id']}")
+            async with sem:
+                await _fetch_coord(hc, r["state_id"], r["id"])
+
+        try:
+            await asyncio.wait_for(asyncio.gather(*[one(r) for r in missing]), timeout=deadline)
+        except asyncio.TimeoutError:
+            pass
+
+
+async def _require_reps() -> list:
+    try:
+        reps = await _get_rb_repeaters()
+    except httpx.HTTPError:
+        raise HTTPException(status_code=502, detail="RepeaterBook nicht erreichbar")
+    if not reps:
+        raise HTTPException(status_code=502, detail="RepeaterBook-Daten nicht verfügbar")
+    return reps
+
 
 def _rb_clean(s: str) -> str:
     s = re.sub(r"<[^>]+>", " ", s or "")
@@ -216,6 +352,7 @@ def _parse_rb_list(html: str, state_id: str) -> list:
             "countryCode": state_id,
             "call": _rb_clean(tds[4]),
             "freq": freq,
+            "band": _band_for_freq(freq),
             "offsetDir": _rb_clean(m_off.group(1)) if m_off else "",
             "tone": _rb_clean(tds[2]),
             "location": _rb_clean(tds[3]),
@@ -297,20 +434,129 @@ def _parse_rb_detail(html: str) -> dict:
     return d
 
 
+@api_router.get("/repeater/bands")
+async def repeater_bands():
+    reps = await _require_reps()
+    counts: dict = {}
+    for r in reps:
+        b = r.get("band")
+        if b:
+            counts[b] = counts.get(b, 0) + 1
+    order = [k for k, _, _ in RB_BANDS]
+    result = [{"band": b, "count": counts[b]} for b in order if b in counts]
+    return {"bands": result}
+
+
+@api_router.get("/repeater/suggest")
+async def repeater_suggest(q: str, limit: int = 15):
+    ql = q.strip().lower()
+    if not ql:
+        return {"query": ql, "count": 0, "results": []}
+    reps = await _require_reps()
+    out = []
+    for r in reps:
+        call = r["call"].lower()
+        loc = r["location"].lower()
+        tokens = [t for t in re.split(r"[,\s/]+", loc) if t]
+        if call.startswith(ql) or loc.startswith(ql) or any(t.startswith(ql) for t in tokens):
+            out.append(r)
+
+    def rank(r):
+        call = r["call"].lower()
+        loc = r["location"].lower()
+        if call.startswith(ql):
+            return (0, loc)
+        if loc.startswith(ql):
+            return (1, loc)
+        return (2, loc)
+
+    out.sort(key=rank)
+    top = out[:limit]
+    _enqueue_coords(top)
+    return {"query": ql, "count": len(out), "results": top}
+
+
+@api_router.get("/repeater/geocode")
+async def repeater_geocode(q: str):
+    global _nominatim_last
+    query = q.strip()
+    if not query:
+        raise HTTPException(status_code=400, detail="Ort fehlt")
+    async with _nominatim_lock:
+        wait = 1.0 - (_time.time() - _nominatim_last)
+        if wait > 0:
+            await asyncio.sleep(wait)
+        _nominatim_last = _time.time()
+        try:
+            async with httpx.AsyncClient(timeout=15, headers={"User-Agent": NOMINATIM_UA}) as hc:
+                r = await hc.get(
+                    "https://nominatim.openstreetmap.org/search",
+                    params={"q": query, "format": "json", "limit": 1, "addressdetails": 0},
+                )
+        except httpx.HTTPError:
+            raise HTTPException(status_code=502, detail="Geocoding nicht erreichbar")
+    data = r.json() if r.status_code == 200 else []
+    if not data:
+        raise HTTPException(status_code=404, detail="Ort nicht gefunden")
+    top = data[0]
+    return {"lat": float(top["lat"]), "lon": float(top["lon"]), "display": top.get("display_name", query)}
+
+
 @api_router.get("/repeater/search")
-async def repeater_search(freq: float, mode: str = ""):
-    try:
-        reps = await _get_rb_repeaters()
-    except httpx.HTTPError:
-        raise HTTPException(status_code=502, detail="RepeaterBook nicht erreichbar")
-    if not reps:
-        raise HTTPException(status_code=502, detail="RepeaterBook-Daten nicht verfügbar")
-    mode_l = mode.lower().strip()
-    matches = [r for r in reps if abs(r["freq"] - freq) <= RB_FREQ_TOL]
-    if mode_l:
-        matches = [r for r in matches if mode_l in r["modes"].lower()]
-    matches.sort(key=lambda r: (r["freq"], r["call"]))
-    return {"query": freq, "count": len(matches), "results": matches}
+async def repeater_search(
+    freq: Optional[float] = None,
+    bands: str = "",
+    near: str = "",
+    radius: float = 30.0,
+):
+    reps = await _require_reps()
+
+    cand = reps
+    if freq is not None:
+        cand = [r for r in cand if abs(r["freq"] - freq) <= RB_FREQ_TOL]
+
+    band_set = {b.strip() for b in bands.split(",") if b.strip()}
+    if band_set:
+        cand = [r for r in cand if r.get("band") in band_set]
+
+    near_active = False
+    plat = plon = 0.0
+    if near.strip():
+        parts = near.split(",")
+        try:
+            plat = float(parts[0])
+            plon = float(parts[1])
+            near_active = True
+        except (ValueError, IndexError):
+            raise HTTPException(status_code=400, detail="Ungültige Koordinaten")
+
+    if freq is None and not band_set and not near_active:
+        return {"count": 0, "results": [], "near": False, "pendingCoords": 0}
+
+    if near_active:
+        # Lazily warm coords for this real result set (bounded sync + background).
+        await _warm_coords_sync(cand)
+        _enqueue_coords(cand)
+        out = []
+        pending = 0
+        for r in cand:
+            c = _coords.get(f"{r['state_id']}-{r['id']}")
+            if c is None:
+                pending += 1
+                continue
+            dist = _haversine_km(plat, plon, c[0], c[1])
+            if dist <= radius:
+                rr = dict(r)
+                rr["distanceKm"] = round(dist, 1)
+                rr["lat"] = c[0]
+                rr["lon"] = c[1]
+                out.append(rr)
+        out.sort(key=lambda r: r["distanceKm"])
+        return {"count": len(out), "results": out, "near": True, "radius": radius, "pendingCoords": pending}
+
+    _enqueue_coords(cand)
+    cand = sorted(cand, key=lambda r: (r["location"].lower(), r["freq"]))
+    return {"count": len(cand), "results": cand, "near": False, "pendingCoords": 0}
 
 
 @api_router.get("/repeater/detail")
@@ -351,15 +597,23 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 @app.on_event("startup")
-async def _warm_rb_cache():
-    # Pre-warm the RepeaterBook DACH cache in the background so the very first
-    # user search is served instantly instead of blocking on a ~90s scrape
-    # (which the ingress proxy could otherwise time out).
+async def _startup():
+    # Prepare the lazy coordinate worker + warm the RepeaterBook DACH list cache
+    # in the background so the first user search is served instantly.
+    global _coord_queue
+    _coord_queue = asyncio.Queue(maxsize=6000)
+
     async def _run():
+        try:
+            await _load_coords_from_db()
+            logger.info("Loaded %d cached repeater coords", len(_coords))
+        except Exception as e:  # pragma: no cover
+            logger.warning("Coord load failed: %s", e)
+        asyncio.create_task(_coord_worker())
         try:
             reps = await _get_rb_repeaters()
             logger.info("RepeaterBook cache warmed: %d repeaters", len(reps))
-        except Exception as e:  # pragma: no cover - best-effort warmup
+        except Exception as e:  # pragma: no cover
             logger.warning("RepeaterBook warmup failed: %s", e)
 
     asyncio.create_task(_run())
