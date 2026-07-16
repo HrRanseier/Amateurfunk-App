@@ -2,6 +2,7 @@
   "name": "frontend",
   "main": "expo-router/entry",
   "version": "1.0.0",
+  "author": "Ingo Rummel (DJ1IR)",
   "scripts": {
     "preinstall": "./scripts/cmd-guard.js --preinstall",
     "start": "expo start",

@@ -47,6 +47,17 @@ export default function HubScreen() {
             by DJ 1 IR
           </Text>
         </View>
+        <Pressable
+          testID="about-button"
+          onPress={() => {
+            Haptics.selectionAsync();
+            router.push("/about");
+          }}
+          hitSlop={12}
+          style={styles.infoBtn}
+        >
+          <MaterialCommunityIcons name="information-outline" size={26} color={colors.onSurfaceMuted} />
+        </Pressable>
       </View>
 
       <ScrollView
@@ -140,6 +151,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   headerText: { flex: 1 },
+  infoBtn: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
   title: { fontSize: fontSize.xxl, fontWeight: "800", letterSpacing: 0.5 },
   subtitle: { fontSize: fontSize.base, marginTop: 2 },
   grid: {

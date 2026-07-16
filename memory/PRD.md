@@ -116,3 +116,8 @@ Android-App für Amateurfunker. Hub-and-Module-Architektur: zentraler Startbilds
 - [x] Cards show Frage/Aussage (where both exist), Praxis-Hinweis + Merkhilfe where present, a green "Prüfung" badge for exam-relevant Q-codes, and an optional `qcode-exam-toggle` ("Nur prüfungsrelevante anzeigen").
 - [x] Entry "99" rendered as a WARNING card (red border + alert icon + red text) per requirement.
 - [x] Tested green iteration_10 (frontend 10/10 + regressions). Lint clean.
+
+## Update 2026-07 (App-Metadaten + "Über die App")
+- [x] `app.json` `expo.name` → **"Funk Toolbox"** (Homescreen-Label der installierten App). `slug` bewusst auf "frontend" belassen (an EAS `projectId` gebunden — Änderung bräche die Publish-/Build-Verknüpfung; das Label hängt an `name`, nicht am Slug).
+- [x] `package.json` `author` → "Ingo Rummel (DJ1IR)". `eas.json` hat keinen Submit-Block; Store-Herausgebername kommt vom Entwickler-Account beim Publish.
+- [x] Neuer Screen **`app/about.tsx`** ("Über die App"), erreichbar über Info-Icon oben rechts am Hub (`about-button`): App-Name, Version (auto via `expo-constants`, nicht hartkodiert), "Entwickelt von DJ1IR, Ingo Rummel", Platzhalter-Abschnitt "Kontakt – noch zu ergänzen". Verifiziert via Screenshot.
