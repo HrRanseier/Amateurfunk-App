@@ -107,5 +107,12 @@ Android-App für Amateurfunker. Hub-and-Module-Architektur: zentraler Startbilds
 - [x] Tested green iteration_9 (backend 15/15 pytest + full frontend flow + regressions). Lint clean. NOTE: GPS button is native-only (browser geolocation blocked in web preview); manual location works everywhere.
 
 ## Next Tasks (updated)
-- **Q-Codes** module (P2, currently disabled placeholder tile).
 - Optional cleanup: two web-only RN deprecation warnings (`shadow*`, `pointerEvents`); optional `server.py` split into routers as it now spans 3 domains (OpenAIP, RepeaterBook, geocode).
+
+## Update 2026-07 (Q-Codes module — new offline reference)
+- [x] Hub tile **Q-Codes** now ACTIVE (`/qcodes`, subtitle "Codes & Kürzel"), replaces the disabled placeholder.
+- [x] New fully-offline module (no backend): `app/qcodes.tsx` + data `src/qcodes/data.ts` (64 entries — 30 Q-Codes + 73/88 + 32 Betriebsabkürzungen). Two categories in ONE searchable list, each card tagged with a type badge "Q-Code" / "Abkürzung".
+- [x] Search `qcode-search-input` filters live & multi-match over code + Frage + Aussage + Praxis + Merkhilfe + a HIDDEN keyword field simultaneously (e.g. "standort" → QTH, "danke" → TNX). Filter chips `qcode-filter-all/qcode/abbr`; `qcode-count`. Sorted alphabetically.
+- [x] Cards show Frage/Aussage (where both exist), Praxis-Hinweis + Merkhilfe where present, a green "Prüfung" badge for exam-relevant Q-codes, and an optional `qcode-exam-toggle` ("Nur prüfungsrelevante anzeigen").
+- [x] Entry "99" rendered as a WARNING card (red border + alert icon + red text) per requirement.
+- [x] Tested green iteration_10 (frontend 10/10 + regressions). Lint clean.
