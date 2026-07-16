@@ -131,6 +131,8 @@ Android-App für Amateurfunker. Hub-and-Module-Architektur: zentraler Startbilds
 - [x] **Tablet-Responsivität** (`src/theme/layout.ts`): `MAX_CONTENT_WIDTH=600` (Text-/Formularbereiche via `centered`), `MAX_GRID_WIDTH=760` (Hub-Grid) — zentriert statt volle Breite auf breiten Screens.
 - [x] **`overlayChip(darkbg)`**: halbtransparenter dunkler Chip hinter frei stehenden Hinweis-/Quellen-/Disclaimer-Texten für Lesbarkeit über den hellen Platinen-Symbolen.
 - [x] Portrait-Lock. Über 15 Dateien umgebaut. **Regression grün (iteration_11):** alle 8 Routen in BEIDEN Modi geprüft — Morse fixe untere Eingabeleiste, Repeater Band-Chips (Mehrfachauswahl), Q-Codes/Rufzeichen Scroll-Verhalten alle intakt; keine kaputten ScrollViews/Inputs/Touch-Ziele.
+- [x] **Standard-Modus = "darkbg"** (2026-07): Bei erstmaligem Start / ohne gespeicherte Wahl ist "Dunkler Hintergrund" die Vorgabe (`src/theme/design.tsx` Default + Context-Default). Manuelles Umschalten auf "Minimalistisch" bleibt möglich.
+- [x] **Hintergrundbilder vorladen** (`app/_layout.tsx`): alle 8 Bilder werden beim Start via `expo-asset` `Asset.loadAsync(Object.values(BACKGROUNDS))` parallel vorgeladen; Splash (`SplashScreen.preventAutoHideAsync`) wird erst nach `bgReady && ready && (loaded||error)` ausgeblendet, UI rendert erst dann — unabhängig vom aktiven Modus, kein Pop-in beim späteren Umschalten. `expo-asset@~12.0.13` explizit in package.json.
 
 ## Offene / optionale Aufgaben
 - Optional (nicht blockierend, web-only Konsolen-Warnungen): `shadow*` → `boxShadow` in `app/repeater/index.tsx` (suggestBox); `pointerEvents`-Prop → `style.pointerEvents` in `ScreenBg`/`ScreenHeader`/`app/index.tsx`.

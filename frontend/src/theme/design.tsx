@@ -16,19 +16,20 @@ type DesignContextValue = {
 };
 
 export const DesignContext = createContext<DesignContextValue>({
-  mode: "minimal",
+  mode: "darkbg",
   setMode: () => {},
   ready: false,
 });
 
 export function DesignProvider({ children }: { children: React.ReactNode }) {
-  const [mode, setModeState] = useState<DesignMode>("minimal");
+  const [mode, setModeState] = useState<DesignMode>("darkbg");
   const [ready, setReady] = useState(false);
 
   // Read the saved choice BEFORE the UI renders (RootLayout gates on `ready`).
+  // Default (no saved choice yet) is "darkbg".
   useEffect(() => {
     (async () => {
-      const saved = await storage.getItem<DesignMode>(STORAGE_KEY, "minimal");
+      const saved = await storage.getItem<DesignMode>(STORAGE_KEY, "darkbg");
       if (saved === "darkbg" || saved === "minimal") setModeState(saved);
       setReady(true);
     })();

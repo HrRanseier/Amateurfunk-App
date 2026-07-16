@@ -60,7 +60,8 @@
         {
           "locationWhenInUsePermission": "Zeigt Amateurfunk-Repeater in deiner Nähe"
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true

@@ -1,7 +1,8 @@
 import { Stack } from "expo-router";
+import { Asset } from "expo-asset";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { LogBox, useColorScheme } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
@@ -9,6 +10,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ToastProvider } from "@/src/components/Toast";
 import { useIconFonts } from "@/src/hooks/use-icon-fonts";
+import { BACKGROUNDS } from "@/src/theme/backgrounds";
 import { DesignProvider, useDesign } from "@/src/theme/design";
 
 // Disable logbox errors etc so that users can see the app
@@ -28,15 +30,26 @@ function RootInner() {
   const darkbg = mode === "darkbg";
   const dark = darkbg || scheme === "dark";
 
+  // Preload & decode ALL 8 dark-background images into memory before the UI is
+  // shown, so switching to "Dunkler Hintergrund" never pops-in a late image.
+  // Done regardless of the currently active design mode.
+  const [bgReady, setBgReady] = useState(false);
   useEffect(() => {
-    if ((loaded || error) && ready) {
+    Asset.loadAsync(Object.values(BACKGROUNDS))
+      .catch(() => {}) // never block the app if a preload fails
+      .finally(() => setBgReady(true));
+  }, []);
+
+  useEffect(() => {
+    if ((loaded || error) && ready && bgReady) {
       SplashScreen.hideAsync();
     }
-  }, [loaded, error, ready]);
+  }, [loaded, error, ready, bgReady]);
 
-  // Gate the UI until BOTH icon fonts and the saved design choice are ready,
-  // so the correct theme/background is applied before the first render.
-  if ((!loaded && !error) || !ready) return null;
+  // Gate the UI until icon fonts, the saved design choice AND all background
+  // images are ready, so the correct theme/background is applied on the first
+  // render without a decode delay.
+  if ((!loaded && !error) || !ready || !bgReady) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
