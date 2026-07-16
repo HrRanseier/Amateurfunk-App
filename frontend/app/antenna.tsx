@@ -135,6 +135,18 @@ export default function AntennaScreen() {
       >
         {mode === "forward" ? (
           <>
+            {/* Step instruction — guides the user, sits ABOVE the input */}
+            <View style={[styles.instruction, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
+              <MaterialCommunityIcons
+                name={fwdStatus == null ? "check-circle-outline" : "information-outline"}
+                size={20}
+                color={fwdStatus == null ? colors.brand : colors.onSurfaceMuted}
+              />
+              <Text testID="antenna-step-instruction" style={[styles.instructionText, { color: colors.onSurface }]}>
+                {fwdStatus ?? "Bereit – Ergebnis unten"}
+              </Text>
+            </View>
+
             {/* Frequency — type directly in this field */}
             <View style={[styles.freqCard, { backgroundColor: colors.surfaceSecondary, borderColor: colors.borderStrong }]}>
               <View style={styles.inputRow}>
@@ -145,9 +157,9 @@ export default function AntennaScreen() {
                   onChangeText={(t) => setFreqText(sanitize(t))}
                   keyboardType="decimal-pad"
                   inputMode="decimal"
-                  placeholder="Sendefrequenz eingeben"
+                  placeholder="z.B. 145.500"
                   placeholderTextColor={colors.onSurfaceMuted}
-                  style={[styles.freqInput, { color: colors.onSurface }]}
+                  style={[styles.freqInput, { color: colors.onSurface, fontSize: freqText ? fontSize.xxl : fontSize.lg }]}
                 />
                 <Text style={[styles.unit, { color: colors.brand }]}>MHz</Text>
               </View>
@@ -189,7 +201,7 @@ export default function AntennaScreen() {
                 <View style={styles.statusWrap}>
                   <MaterialCommunityIcons name="ruler" size={26} color={colors.onSurfaceMuted} />
                   <Text testID="antenna-result-status" style={[styles.statusText, { color: colors.onSurfaceMuted }]}>
-                    {fwdStatus}
+                    Drahtlänge erscheint hier
                   </Text>
                 </View>
               ) : (
@@ -313,6 +325,16 @@ const styles = StyleSheet.create({
   bandHarm: { fontSize: fontSize.sm, marginTop: 2 },
 
   card: { borderRadius: radius.lg, borderWidth: 1, padding: spacing.lg, gap: spacing.md },
+  instruction: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+  },
+  instructionText: { flex: 1, fontSize: fontSize.base, fontWeight: "700" },
   stepHeader: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   stepNum: { width: 24, height: 24, borderRadius: radius.pill, alignItems: "center", justifyContent: "center" },
   stepNumText: { fontSize: fontSize.sm, fontWeight: "800" },
