@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
+import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { ScreenHeader } from "@/src/components/ScreenHeader";
 import { fontSize, radius, spacing } from "@/src/theme/tokens";
@@ -43,13 +43,18 @@ export default function AboutScreen() {
           </View>
         </View>
 
-        {/* Contact placeholder */}
+        {/* Contact */}
         <View style={[styles.card, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
           <Text style={[styles.section, { color: colors.brand }]}>KONTAKT</Text>
-          <View style={styles.row}>
-            <MaterialCommunityIcons name="email-outline" size={22} color={colors.onSurfaceMuted} />
-            <Text style={[styles.placeholder, { color: colors.onSurfaceMuted }]}>noch zu ergänzen</Text>
-          </View>
+          <Pressable
+            testID="about-email"
+            onPress={() => Linking.openURL("mailto:DJ1IR@gmx.de")}
+            style={styles.row}
+            hitSlop={8}
+          >
+            <MaterialCommunityIcons name="email-outline" size={22} color={colors.brand} />
+            <Text style={[styles.email, { color: colors.brand }]}>DJ1IR@gmx.de</Text>
+          </Pressable>
         </View>
 
         <Text style={[styles.footer, { color: colors.onSurfaceMuted }]}>
@@ -82,7 +87,7 @@ const styles = StyleSheet.create({
   rowText: { flex: 1 },
   rowLabel: { fontSize: fontSize.sm, fontWeight: "600" },
   rowValue: { fontSize: fontSize.lg, fontWeight: "800", marginTop: 2 },
-  placeholder: { fontSize: fontSize.base, fontWeight: "600", fontStyle: "italic" },
+  email: { fontSize: fontSize.lg, fontWeight: "800", textDecorationLine: "underline" },
 
   footer: { fontSize: fontSize.sm, fontWeight: "600", textAlign: "center", marginTop: spacing.md },
 });
