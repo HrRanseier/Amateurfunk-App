@@ -2,9 +2,10 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, Image, Keyboard, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Keyboard, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 
+import { NoTransmitSign } from "@/src/components/NoTransmitSign";
 import { ScreenHeader } from "@/src/components/ScreenHeader";
 import { fontSize, monoFont, radius, spacing } from "@/src/theme/tokens";
 import { useTheme } from "@/src/theme/useTheme";
@@ -179,12 +180,7 @@ export default function FlugfunkScreen() {
             })}
 
             <View style={styles.signWrap}>
-              <Image
-                source={require("../../assets/images/no-transmit.png")}
-                style={styles.signImage}
-                resizeMode="contain"
-                accessibilityLabel="Senden verboten, nur Empfang!"
-              />
+              <NoTransmitSign size={240} />
             </View>
             <Text style={[styles.attribution, { color: colors.onSurfaceMuted }]}>Daten: OpenAIP (openaip.net)</Text>
           </View>
