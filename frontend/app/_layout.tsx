@@ -35,9 +35,18 @@ function RootInner() {
   // Done regardless of the currently active design mode.
   const [bgReady, setBgReady] = useState(false);
   useEffect(() => {
-    Asset.loadAsync(Object.values(BACKGROUNDS))
-      .catch(() => {}) // never block the app if a preload fails
-      .finally(() => setBgReady(true));
+    let done = false;
+    const finish = () => {
+      if (!done) {
+        done = true;
+        setBgReady(true);
+      }
+    };
+    Asset.loadAsync(Object.values(BACKGROUNDS)).catch(() => {}).finally(finish);
+    // Safety net: never let a slow/stalled download block the splash forever
+    // (e.g. on a poor mobile connection through the Expo Go tunnel).
+    const t = setTimeout(finish, 4000);
+    return () => clearTimeout(t);
   }, []);
 
   useEffect(() => {
