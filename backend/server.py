@@ -350,6 +350,21 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+@app.on_event("startup")
+async def _warm_rb_cache():
+    # Pre-warm the RepeaterBook DACH cache in the background so the very first
+    # user search is served instantly instead of blocking on a ~90s scrape
+    # (which the ingress proxy could otherwise time out).
+    async def _run():
+        try:
+            reps = await _get_rb_repeaters()
+            logger.info("RepeaterBook cache warmed: %d repeaters", len(reps))
+        except Exception as e:  # pragma: no cover - best-effort warmup
+            logger.warning("RepeaterBook warmup failed: %s", e)
+
+    asyncio.create_task(_run())
+
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()

@@ -48,6 +48,14 @@ export const modules: ToolModule[] = [
     subtitle: "KW · CB · Flugfunk",
   },
   {
+    id: "repeater",
+    title: "Repeater",
+    icon: "access-point-network",
+    route: "/repeater",
+    enabled: true,
+    subtitle: "DACH · Frequenz",
+  },
+  {
     id: "qcodes",
     title: "Q-Codes",
     icon: "alphabetical",

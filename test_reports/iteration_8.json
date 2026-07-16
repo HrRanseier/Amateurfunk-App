@@ -1,0 +1,52 @@
+{
+  "summary": "Both backend (6/6 pytest) and frontend (mobile 390x844) for the new Repeater-Finder module are fully working. GET /api/repeater/search returns count=53 for 145.6875 MHz and count=54 for 145.600 MHz with DACH breakdown (DE=39, AT=8, CH=6) and all items within ±0.0125 MHz. Every result contains the required fields (id, state_id, call, freq, offsetDir, tone, location, modes, status, countryCode). /api/repeater/detail returns downlink, uplink, offset, lat/lon, call, location, country for a real DE id, and correctly returns HTTP 400 for invalid params (state_id=XX/id=abc and state_id=germany/id=123). Frontend: hub tile 'tool-tile-repeater' navigates to /repeater with ScreenHeader 'Repeater-Finder'; input accepts both '145,600' and '145.600' and both return the same 54 results; attribution 'Daten: RepeaterBook.com' shown on results and detail; mode chips (fm/dmr/dstar/c4fm) toggle and multi-select filter works client-side (FM=45, DMR=4, FM+DMR=47); tapping a card opens /repeater/detail with Downlink 145.587500 MHz, Uplink 144.98750 MHz, Offset -0.600 MHz, Ablage, Ton/CTCSS (CC 1 123.0), Betriebsart, Standort (Langwedel, Niedersachsen), Koordinaten (52.97850, 9.17099) and 'In Karte öffnen' button; regression tiles (morse/antenna/callsign/bandplan) all still navigate.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_repeater.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py is ~370 lines with three distinct feature domains (status/flugfunk/repeater) sharing one _CACHE_TTL constant; splitting into routers/services modules would help before the fourth feature lands (not urgent).",
+    "In /api/repeater/detail, when RepeaterBook responds with a non-200 status (e.g. 404 for a missing ID), the endpoint returns 502 'Detailseite nicht verfügbar'. Consider mapping upstream 404 -> 404 (or a distinct error) so the client can tell 'unknown id' from 'RepeaterBook down' (minor).",
+    "The Row component in repeater/detail.tsx renders nothing when value is empty which is correct; as a consequence 'Bandbreite' is only shown when RepeaterBook exposes it – observed on DMR entry where bandwidth was empty. This matches spec but worth noting."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_repeater.py"
+  ],
+  "success_rate": {"backend": "100% (6/6)", "frontend": "100%"},
+  "seed_data_creation": "None – live scrape cache is warmed on backend startup (1939 repeaters).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Tests run against public URL https://funk-toolbox.preview.emergentagent.com on mobile viewport 390x844. Backend cache is warmed at supervisor startup so /api/repeater/search returns in <200ms – no need to wait 90s. To pick a live DE id for /api/repeater/detail, first call /api/repeater/search?freq=145.600 and reuse any result with state_id=DE (e.g. 8486). Detail parser is regex/line-based (no json.loads); Bandwidth may be absent for some entries which is expected. Frontend testIDs used: tool-tile-repeater, repeater-freq-input, repeater-search-button, repeater-results, repeater-item-<id>, repeater-chip-{fm,dmr,dstar,c4fm}, repeater-attribution, repeater-detail, repeater-detail-attribution, repeater-map-button.",
+  "detailed_results": {
+    "backend": {
+      "search_145_6875": {"count": 53, "codes": {"DE": 39, "AT": 8, "CH": 6}, "sample": {"id": "9355", "call": "DB0ARB", "freq": 145.675}},
+      "search_145_600": {"count": 54},
+      "detail_de_example": {"id": "8486", "downlink_present": true, "uplink_present": true, "offset_present": true},
+      "invalid_detail_state_XX_id_abc": 400,
+      "invalid_detail_state_germany_id_123": 400,
+      "missing_freq_param": 422
+    },
+    "frontend": {
+      "hub_tiles_visible": ["morse", "antenna", "callsign", "bandplan", "repeater"],
+      "header": "Repeater-Finder",
+      "comma_input_145,600": 54,
+      "dot_input_145.600": 54,
+      "chip_filter_fm_only": 45,
+      "chip_filter_dmr_only": 4,
+      "chip_filter_fm_plus_dmr": 47,
+      "attribution_list_visible": true,
+      "attribution_detail_visible": true,
+      "detail_labels_visible": ["Downlink", "Uplink", "Offset", "Ablage", "Ton / CTCSS", "Betriebsart", "Standort", "Koordinaten"],
+      "map_button_present": true,
+      "regression_navigation": {"/morse": true, "/antenna": true, "/callsign": true, "/bandplan": true}
+    }
+  }
+}

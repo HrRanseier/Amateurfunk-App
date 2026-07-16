@@ -194,6 +194,39 @@ frontend:
         -working: "NA"
         -agent: "main"
         -comment: "data.ts BANDS reordered: 10m,12m,15m,17m,20m,30m,40m,60m,80m,160m,23cm,70cm,2m,6m (2200m & 600m removed). New VHF/UHF bands carry unit:'MHz' so segmentRange renders MHz; formatBandwidth() shows kHz for >=10kHz segments. findHamSegment now identifies VHF/UHF on hub 'Frequenz prüfen' AND /bandplan/check. Unit test scripts/bandplan-selftest.ts: 21/21 PASS. Verified amateur list order + 2m band detail via screenshot."
+  - task: "Repeater-Finder — hub tile active + navigation"
+    implemented: true
+    working: "NA"
+    file: "src/modules/registry.ts, app/index.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "New ACTIVE tile 'Repeater' (icon access-point-network, subtitle 'DACH · Frequenz', route /repeater) inserted before the disabled Q-Codes tile. testID tool-tile-repeater. Verified via screenshot (tile opens /repeater)."
+  - task: "Repeater-Finder — Frequenzsuche DACH (search screen)"
+    implemented: true
+    working: "NA"
+    file: "app/repeater/index.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "MHz freq input (testID repeater-freq-input) accepts BOTH comma and dot as decimal separator; repeater-search-button calls GET /api/repeater/search?freq=. Results (testID repeater-results) render as tappable cards (repeater-item-<id>): status dot (green on-air/red off-air/amber unknown), call, country badge DE/AT/CH, freq (comma decimal) + Ablage, location, mode + tone tags, status label. Optional multi-select mode filter chips (repeater-chip-fm/dmr/dstar/c4fm) filter client-side (fm/dmr/d-star/fusion substrings). Loading + error + empty states. Attribution 'Daten: RepeaterBook.com' (repeater-attribution) links to repeaterbook.com. Verified via screenshot: '145,600' -> 54 results DE/AT/CH."
+  - task: "Repeater-Finder — Detailansicht"
+    implemented: true
+    working: "NA"
+    file: "app/repeater/detail.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Detail screen shows list-provided fields instantly then augments via GET /api/repeater/detail?state_id=&id=. Cards: overview (call, status, country, big freq), FREQUENZDATEN (Downlink/Uplink/Offset/Ablage/Ton-CTCSS/Bandbreite/Betriebsart), STANDORT (location, coords, 'In Karte öffnen' -> google maps), BETREIBER (sponsor if present). Tone prefers richer list value over detail parse. testID repeater-detail. Attribution link present. Verified via screenshot (DB0AL: Downlink 145.5875, Uplink 144.98125, Offset -0.600, coords)."
 
 metadata:
   created_by: "main_agent"
@@ -214,14 +247,42 @@ backend:
         -agent: "main"
         -comment: "GET /api/flugfunk/airports?search= proxies OpenAIP (apiKey query param, server-side only in OPENAIP_API_KEY). GET /api/flugfunk/frequency?mhz=&country=DE reverse-lookup with ±0.005 MHz tolerance over cached country airports (24h in-memory cache). Verified via curl: EDDM search returns freqs; 118.705 reverse -> BITBURG/MUENCHEN(TOWER NORTH)/NORTHEIM. External URL works."
 
+  - task: "Repeater-Finder — RepeaterBook DACH scrape/cache + search + detail endpoints"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: true
+        -agent: "main"
+        -comment: "No API key. Scrapes RepeaterBook row_repeaters/Display_SS.php for DE/AT/CH into a 24h in-memory cache (warmed on startup: 1939 repeaters). GET /api/repeater/search?freq= returns matches within ±0.0125 MHz (id,call,freq,offsetDir,tone,location,modes,status,countryCode). GET /api/repeater/detail?state_id=&id= parses the detail page (lat/lon, downlink, uplink, offset, bandwidth, sponsor). Handoff JSONDecodeError is RESOLVED (regex/line-based parse, no json.loads). Verified via curl+python: 145.6875 -> 53 (DE39/AT8/CH6); detail DM0WM downlink 145.581250, offset -0.600, coords."
+
 test_plan:
   current_focus:
-    - "Bandplan hub refactor — embedded UniversalFreqCheck + tile layout (Amateurfunk top, CB/Flugfunk below)"
-    - "Bandplan Amateurfunk subpage — KW band list moved from hub"
-    - "Bandplan CB screen refactor — EU Kanäle grid + Export A–J + Tripple Five"
+    - "Repeater-Finder — Frequenzsuche DACH (search screen)"
+    - "Repeater-Finder — Detailansicht"
+    - "Repeater-Finder — RepeaterBook DACH scrape/cache + search + detail endpoints"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
+
+agent_communication:
+    -agent: "main"
+    -message: |
+      REPEATER-FINDER Phase 1 (Frequenzsuche DACH + Detailansicht). Backend confirmed working (warmup 1939 reps).
+      BACKEND (already verified via curl/python, please regression only):
+        GET /api/repeater/search?freq=145.6875 -> count ~53, results across DE/AT/CH, each with call/freq/modes/tone/status.
+        GET /api/repeater/search?freq=145.600 -> 54. GET /api/repeater/detail?state_id=DE&id=<id from search> -> downlink/uplink/offset/lat/lon.
+      FRONTEND (web preview): Hub tile 'tool-tile-repeater' -> /repeater.
+        Search: repeater-freq-input accepts BOTH '145,600' and '145.600' (comma+dot). repeater-search-button -> repeater-results list.
+          Cards repeater-item-<id> are tappable. Mode chips repeater-chip-fm/dmr/dstar/c4fm filter the list client-side (multi-select toggle).
+          Invalid input (e.g. empty/letters) -> button disabled; a bad number shows repeater-error. No match -> repeater-empty.
+        Detail: tapping a card opens /repeater/detail (testID repeater-detail) with Downlink/Uplink/Offset/Ablage/Ton/Bandbreite/Betriebsart,
+          Standort + Koordinaten + 'In Karte öffnen' (repeater-map-button), Sponsor (if any), attribution link repeater-detail-attribution.
+      Regression: Morse, Freq. Rechner, Rufzeichen, Bandplan hub tiles still open.
+
 
 agent_communication:
     -agent: "main"
