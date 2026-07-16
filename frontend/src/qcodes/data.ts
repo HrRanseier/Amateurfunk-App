@@ -335,7 +335,8 @@ export const QENTRIES: QEntry[] = [
   {
     code: "BK",
     type: "abbr",
-    statement: "Unterbrechungssignal für schnelle Zwischenrufe ohne volle Rufzeichennennung.",
+    statement:
+      'Auch "Break". Unterbrechungssignal für schnelle Zwischenrufe ohne volle Rufzeichennennung. Oft wird fachlich falsch "QRX" oder "X" verwendet!',
     keywords: "unterbrechen, zwischenruf, break",
   },
   {
