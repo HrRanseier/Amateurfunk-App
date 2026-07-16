@@ -14,6 +14,8 @@ import { SettingsSheet } from "@/src/morse/SettingsSheet";
 import { useMorseReceiver } from "@/src/morse/useMorseReceiver";
 import { SendOutputs, useMorseSender } from "@/src/morse/useMorseSender";
 import { fontSize, monoFont, radius, spacing } from "@/src/theme/tokens";
+import { ScreenBg } from "@/src/components/ScreenBg";
+import { centered } from "@/src/theme/layout";
 import { useTheme } from "@/src/theme/useTheme";
 
 export default function MorseScreen() {
@@ -61,7 +63,8 @@ export default function MorseScreen() {
   };
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.surface }]}>
+    <View style={styles.root}>
+      <ScreenBg bg={6} />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -108,7 +111,7 @@ export default function MorseScreen() {
           <ScrollView
             ref={scrollRef}
             style={styles.flex}
-            contentContainerStyle={styles.transContent}
+            contentContainerStyle={[styles.transContent, centered]}
             showsVerticalScrollIndicator={false}
           >
             {receiver.transcript.length === 0 ? (

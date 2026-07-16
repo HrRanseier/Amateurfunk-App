@@ -5,7 +5,9 @@ import { useMemo, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 
 import { ScreenHeader } from "@/src/components/ScreenHeader";
+import { ScreenBg } from "@/src/components/ScreenBg";
 import { QEntry, searchEntries } from "@/src/qcodes/data";
+import { centered, overlayChip } from "@/src/theme/layout";
 import { fontSize, monoFont, radius, spacing } from "@/src/theme/tokens";
 import { useTheme } from "@/src/theme/useTheme";
 
@@ -18,7 +20,7 @@ const FILTERS: { id: Filter; label: string }[] = [
 ];
 
 export default function QCodesScreen() {
-  const { colors, isDark } = useTheme();
+  const { colors, isDark, darkbg } = useTheme();
   const router = useRouter();
 
   const [query, setQuery] = useState("");
@@ -113,10 +115,11 @@ export default function QCodesScreen() {
   };
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.surface }]}>
+    <View style={styles.root}>
+      <ScreenBg bg={5} />
       <ScreenHeader title="Q-Codes" onBack={back} />
 
-      <View style={styles.controls}>
+      <View style={[styles.controls, centered]}>
         <View style={[styles.searchField, { backgroundColor: colors.surfaceSecondary, borderColor: colors.borderStrong }]}>
           <MaterialCommunityIcons name="magnify" size={22} color={colors.brand} />
           <TextInput
@@ -135,7 +138,7 @@ export default function QCodesScreen() {
             </Pressable>
           ) : null}
         </View>
-        <Text style={[styles.hint, { color: colors.onSurfaceMuted }]}>
+        <Text style={[styles.hint, overlayChip(darkbg), { color: colors.onSurfaceMuted }]}>
           Gezielt nach Code suchen (z. B. QRZ) oder mit Stichwort (z. B. Standort).
         </Text>
 
@@ -189,7 +192,7 @@ export default function QCodesScreen() {
         data={data}
         keyExtractor={(item) => item.code}
         renderItem={renderItem}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, centered]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}

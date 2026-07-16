@@ -17,13 +17,15 @@ import {
 } from "@/src/antenna/antenna";
 import { ScreenHeader } from "@/src/components/ScreenHeader";
 import { fontSize, monoFont, radius, spacing } from "@/src/theme/tokens";
+import { ScreenBg } from "@/src/components/ScreenBg";
+import { centered, overlayChip } from "@/src/theme/layout";
 import { useTheme } from "@/src/theme/useTheme";
 
 const LAMBDAS: Lambda[] = ["1/4", "1/2", "5/8", "1/1"];
 type Mode = "forward" | "reverse";
 
 export default function AntennaScreen() {
-  const { colors } = useTheme();
+  const { colors, darkbg } = useTheme();
   const router = useRouter();
 
   const [mode, setMode] = useState<Mode>("forward");
@@ -96,7 +98,8 @@ export default function AntennaScreen() {
   );
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.surface }]}>
+    <View style={styles.root}>
+      <ScreenBg bg={7} />
       <ScreenHeader
         title="Antennenrechner"
         onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))}
@@ -125,7 +128,7 @@ export default function AntennaScreen() {
 
       <KeyboardAwareScrollView
         style={styles.flex}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, centered]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         bottomOffset={spacing.xl}

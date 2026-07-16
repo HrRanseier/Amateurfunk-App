@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useRef } from "react";
 import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -17,9 +18,10 @@ type Props = {
 // Fixed chat-style header: back + title + microphone (start/stop receive, green
 // pulsing when active) + settings gear.
 export function MorseHeader({ title, listening, onBack, onToggleMic, onOpenSettings }: Props) {
-  const { colors } = useTheme();
+  const { colors, darkbg } = useTheme();
   const insets = useSafeAreaInsets();
   const pulse = useRef(new Animated.Value(0)).current;
+  const fg = darkbg ? "#FFFFFF" : colors.onSurface;
 
   useEffect(() => {
     let loop: Animated.CompositeAnimation | null = null;
@@ -43,18 +45,24 @@ export function MorseHeader({ title, listening, onBack, onToggleMic, onOpenSetti
     <View
       style={[
         styles.container,
-        {
-          paddingTop: insets.top + spacing.sm,
-          backgroundColor: colors.surface,
-          borderBottomColor: colors.divider,
-        },
+        { paddingTop: insets.top + spacing.sm },
+        darkbg
+          ? styles.transparent
+          : { backgroundColor: colors.surface, borderBottomColor: colors.divider, borderBottomWidth: StyleSheet.hairlineWidth },
       ]}
     >
+      {darkbg && (
+        <LinearGradient
+          pointerEvents="none"
+          colors={["rgba(0,0,0,0.6)", "rgba(0,0,0,0.25)", "rgba(0,0,0,0)"]}
+          style={StyleSheet.absoluteFill}
+        />
+      )}
       <Pressable testID="header-back-button" onPress={onBack} hitSlop={12} style={styles.iconBtn}>
-        <MaterialCommunityIcons name="chevron-left" size={30} color={colors.onSurface} />
+        <MaterialCommunityIcons name="chevron-left" size={30} color={fg} />
       </Pressable>
 
-      <Text testID="header-title" numberOfLines={1} style={[styles.title, { color: colors.onSurface }]}>
+      <Text testID="header-title" numberOfLines={1} style={[styles.title, { color: fg }]}>
         {title}
       </Text>
 
@@ -88,7 +96,7 @@ export function MorseHeader({ title, listening, onBack, onToggleMic, onOpenSetti
         </View>
 
         <Pressable testID="header-settings-button" onPress={onOpenSettings} hitSlop={8} style={styles.iconBtn}>
-          <MaterialCommunityIcons name="cog-outline" size={24} color={colors.onSurface} />
+          <MaterialCommunityIcons name="cog-outline" size={24} color={fg} />
         </Pressable>
       </View>
     </View>
@@ -101,8 +109,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: spacing.sm,
     paddingBottom: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
   },
+  transparent: { backgroundColor: "transparent" },
   iconBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
   title: { flex: 1, fontSize: fontSize.lg, fontWeight: "700", letterSpacing: 0.3, marginHorizontal: spacing.xs },
   actions: { flexDirection: "row", alignItems: "center", gap: spacing.xs },

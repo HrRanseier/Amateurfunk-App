@@ -8,6 +8,8 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { NoTransmitSign } from "@/src/components/NoTransmitSign";
 import { ScreenHeader } from "@/src/components/ScreenHeader";
 import { fontSize, monoFont, radius, spacing } from "@/src/theme/tokens";
+import { ScreenBg } from "@/src/components/ScreenBg";
+import { centered, overlayChip } from "@/src/theme/layout";
 import { useTheme } from "@/src/theme/useTheme";
 
 const BACKEND = process.env.EXPO_PUBLIC_BACKEND_URL ?? "";
@@ -17,7 +19,7 @@ type Airport = { name: string; icao?: string; iata?: string; country?: string; f
 type Tab = "airport" | "frequency";
 
 export default function FlugfunkScreen() {
-  const { colors } = useTheme();
+  const { colors, darkbg } = useTheme();
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("airport");
 
@@ -69,7 +71,8 @@ export default function FlugfunkScreen() {
   };
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.surface }]}>
+    <View style={styles.root}>
+      <ScreenBg bg={8} />
       <ScreenHeader title="Bandplan · Flugfunk" onBack={back} />
 
       <View style={[styles.segment, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
@@ -88,7 +91,7 @@ export default function FlugfunkScreen() {
 
       <KeyboardAwareScrollView
         style={styles.flex}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, centered]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         bottomOffset={spacing.xl}
@@ -182,7 +185,7 @@ export default function FlugfunkScreen() {
             <View style={styles.signWrap}>
               <NoTransmitSign size={240} />
             </View>
-            <Text style={[styles.attribution, { color: colors.onSurfaceMuted }]}>Daten: OpenAIP (openaip.net)</Text>
+            <Text style={[styles.attribution, overlayChip(darkbg), { color: colors.onSurfaceMuted }]}>Daten: OpenAIP (openaip.net)</Text>
           </View>
         )}
       </KeyboardAwareScrollView>

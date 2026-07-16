@@ -8,10 +8,12 @@ import { MAIN_DISCLAIMER } from "@/src/bandplan/data";
 import { UniversalFreqCheck } from "@/src/bandplan/UniversalFreqCheck";
 import { ScreenHeader } from "@/src/components/ScreenHeader";
 import { fontSize, radius, spacing } from "@/src/theme/tokens";
+import { ScreenBg } from "@/src/components/ScreenBg";
+import { centered, overlayChip } from "@/src/theme/layout";
 import { useTheme } from "@/src/theme/useTheme";
 
 export default function BandplanScreen() {
-  const { colors } = useTheme();
+  const { colors, darkbg } = useTheme();
   const router = useRouter();
 
   const go = (path: string) => {
@@ -20,7 +22,8 @@ export default function BandplanScreen() {
   };
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.surface }]}>
+    <View style={styles.root}>
+      <ScreenBg bg={4} />
       <ScreenHeader
         title="Bandplan"
         onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))}
@@ -28,7 +31,7 @@ export default function BandplanScreen() {
 
       <KeyboardAwareScrollView
         style={styles.flex}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, centered]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         bottomOffset={spacing.xl}
@@ -85,7 +88,7 @@ export default function BandplanScreen() {
           </Pressable>
         </View>
 
-        <Text style={[styles.disclaimer, { color: colors.onSurfaceMuted }]}>{MAIN_DISCLAIMER}</Text>
+        <Text style={[styles.disclaimer, overlayChip(darkbg), { color: colors.onSurfaceMuted }]}>{MAIN_DISCLAIMER}</Text>
       </KeyboardAwareScrollView>
     </View>
   );

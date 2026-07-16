@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import {
@@ -11,18 +12,22 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { ScreenBg } from "@/src/components/ScreenBg";
 import { useToast } from "@/src/components/Toast";
 import { modules, ToolModule } from "@/src/modules/registry";
+import { MAX_GRID_WIDTH } from "@/src/theme/layout";
 import { fontSize, radius, spacing } from "@/src/theme/tokens";
 import { useTheme } from "@/src/theme/useTheme";
 
 export default function HubScreen() {
-  const { colors } = useTheme();
+  const { colors, darkbg } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const toast = useToast();
   const { width } = useWindowDimensions();
-  const tileSize = (width - spacing.lg * 2 - spacing.md) / 2;
+  const cols = width >= 700 ? 3 : 2;
+  const gridW = Math.min(width, MAX_GRID_WIDTH);
+  const tileSize = (gridW - spacing.lg * 2 - spacing.md * (cols - 1)) / cols;
 
   const onPressTile = (mod: ToolModule) => {
     Haptics.selectionAsync();
@@ -34,8 +39,16 @@ export default function HubScreen() {
   };
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.surface }]}>
+    <View style={styles.root}>
+      <ScreenBg bg={1} />
       <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
+        {darkbg && (
+          <LinearGradient
+            pointerEvents="none"
+            colors={["rgba(0,0,0,0.6)", "rgba(0,0,0,0.2)", "rgba(0,0,0,0)"]}
+            style={StyleSheet.absoluteFill}
+          />
+        )}
         <View style={[styles.logoBadge, { backgroundColor: colors.brandPrimary }]}>
           <MaterialCommunityIcons name="radio-tower" size={24} color={colors.onBrandPrimary} />
         </View>
@@ -61,7 +74,10 @@ export default function HubScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={[styles.grid, { paddingBottom: insets.bottom + spacing.xl }]}
+        contentContainerStyle={[
+          styles.grid,
+          { maxWidth: MAX_GRID_WIDTH, alignSelf: "center", width: "100%", paddingBottom: insets.bottom + spacing.xl },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         {modules.map((mod) => {

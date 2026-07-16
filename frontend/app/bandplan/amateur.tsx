@@ -6,10 +6,12 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { BANDS, SOURCE_NOTE } from "@/src/bandplan/data";
 import { ScreenHeader } from "@/src/components/ScreenHeader";
 import { fontSize, monoFont, radius, spacing } from "@/src/theme/tokens";
+import { ScreenBg } from "@/src/components/ScreenBg";
+import { centered, overlayChip } from "@/src/theme/layout";
 import { useTheme } from "@/src/theme/useTheme";
 
 export default function AmateurScreen() {
-  const { colors } = useTheme();
+  const { colors, darkbg } = useTheme();
   const router = useRouter();
 
   const go = (path: string) => {
@@ -19,10 +21,11 @@ export default function AmateurScreen() {
   const back = () => (router.canGoBack() ? router.back() : router.replace("/bandplan"));
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.surface }]}>
+    <View style={styles.root}>
+      <ScreenBg bg={4} />
       <ScreenHeader title="Bandplan · Amateurfunk" onBack={back} />
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.content, centered]} showsVerticalScrollIndicator={false}>
         {/* Frequenz prüfen — prominent */}
         <Pressable
           testID="bandplan-check-button"
@@ -63,7 +66,7 @@ export default function AmateurScreen() {
           </Pressable>
         ))}
 
-        <Text style={[styles.disclaimer, { color: colors.onSurfaceMuted }]}>{SOURCE_NOTE}</Text>
+        <Text style={[styles.disclaimer, overlayChip(darkbg), { color: colors.onSurfaceMuted }]}>{SOURCE_NOTE}</Text>
       </ScrollView>
     </View>
   );

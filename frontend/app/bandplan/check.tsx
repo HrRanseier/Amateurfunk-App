@@ -8,6 +8,8 @@ import { AFUV_OUTSIDE_HINT, EMCOMM_HINT } from "@/src/bandplan/data";
 import { findHamSegment, formatBandwidth, isEmcomm, parseFrequencyKHz, powerRows, segmentRange, Unit } from "@/src/bandplan/frequency";
 import { ScreenHeader } from "@/src/components/ScreenHeader";
 import { fontSize, monoFont, radius, spacing } from "@/src/theme/tokens";
+import { ScreenBg } from "@/src/components/ScreenBg";
+import { centered } from "@/src/theme/layout";
 import { useTheme } from "@/src/theme/useTheme";
 
 export default function FrequencyCheckScreen() {
@@ -25,11 +27,12 @@ export default function FrequencyCheckScreen() {
   const detected = khz != null ? String(khz).replace(".", ",") : null;
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.surface }]}>
+    <View style={styles.root}>
+      <ScreenBg bg={4} />
       <ScreenHeader title="Bandplan · Frequenz prüfen" onBack={back} />
       <KeyboardAwareScrollView
         style={styles.flex}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, centered]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         bottomOffset={spacing.xl}

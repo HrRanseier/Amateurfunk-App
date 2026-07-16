@@ -23,6 +23,8 @@ import {
 } from "@/src/bandplan/cbData";
 import { ScreenHeader } from "@/src/components/ScreenHeader";
 import { fontSize, monoFont, radius, spacing } from "@/src/theme/tokens";
+import { ScreenBg } from "@/src/components/ScreenBg";
+import { centered } from "@/src/theme/layout";
 import { useTheme } from "@/src/theme/useTheme";
 
 const CB_YELLOW_LIGHT = "#FFF59D"; // Kanäle 1–40 (hellgelb)
@@ -69,7 +71,8 @@ export default function CbScreen() {
   ];
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.surface }]}>
+    <View style={styles.root}>
+      <ScreenBg bg={8} />
       <ScreenHeader title="Bandplan · CB-Funk" onBack={back} />
 
       <View style={[styles.segment, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
@@ -94,7 +97,7 @@ export default function CbScreen() {
       <KeyboardAwareScrollView
         ref={scrollRef}
         style={styles.flex}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, centered]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         bottomOffset={spacing.xl}

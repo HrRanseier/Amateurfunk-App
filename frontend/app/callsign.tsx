@@ -17,6 +17,8 @@ import { WebView } from "react-native-webview";
 
 import { ScreenHeader } from "@/src/components/ScreenHeader";
 import { fontSize, monoFont, radius, spacing } from "@/src/theme/tokens";
+import { ScreenBg } from "@/src/components/ScreenBg";
+import { centered, overlayChip } from "@/src/theme/layout";
 import { useTheme } from "@/src/theme/useTheme";
 
 type CallData = {
@@ -94,7 +96,7 @@ true;
 `;
 
 export default function CallsignScreen() {
-  const { colors } = useTheme();
+  const { colors, darkbg } = useTheme();
   const router = useRouter();
 
   const [input, setInput] = useState("");
@@ -230,7 +232,7 @@ export default function CallsignScreen() {
               </View>
             );
           })}
-          <Text style={[styles.source, { color: colors.onSurfaceMuted }]}>Quelle: hamqth.com</Text>
+          <Text style={[styles.source, overlayChip(darkbg), { color: colors.onSurfaceMuted }]}>Quelle: hamqth.com</Text>
         </View>
       );
     }
@@ -238,7 +240,8 @@ export default function CallsignScreen() {
   };
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.surface }]}>
+    <View style={styles.root}>
+      <ScreenBg bg={2} />
       <ScreenHeader
         title="Rufzeichen"
         onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))}
@@ -271,7 +274,7 @@ export default function CallsignScreen() {
       ) : (
         <KeyboardAwareScrollView
           style={styles.flex}
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, centered]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           bottomOffset={spacing.xl}

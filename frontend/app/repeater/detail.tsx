@@ -6,6 +6,8 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 
 import { ScreenHeader } from "@/src/components/ScreenHeader";
 import { fontSize, monoFont, radius, spacing } from "@/src/theme/tokens";
+import { ScreenBg } from "@/src/components/ScreenBg";
+import { centered, overlayChip } from "@/src/theme/layout";
 import { useTheme } from "@/src/theme/useTheme";
 
 const BACKEND = process.env.EXPO_PUBLIC_BACKEND_URL ?? "";
@@ -38,7 +40,7 @@ function statusLabel(status: string) {
 }
 
 export default function RepeaterDetailScreen() {
-  const { colors } = useTheme();
+  const { colors, darkbg } = useTheme();
   const router = useRouter();
   const p = useLocalSearchParams<{
     state_id?: string;
@@ -111,12 +113,13 @@ export default function RepeaterDetailScreen() {
   };
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.surface }]}>
+    <View style={styles.root}>
+      <ScreenBg bg={3} />
       <ScreenHeader title={`Repeater · ${call}`} onBack={back} />
 
       <KeyboardAwareScrollView
         style={styles.flex}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, centered]}
         showsVerticalScrollIndicator={false}
       >
         {/* Overview */}
@@ -199,7 +202,7 @@ export default function RepeaterDetailScreen() {
         <Pressable
           testID="repeater-detail-attribution"
           onPress={() => Linking.openURL(RB_URL)}
-          style={styles.attrWrap}
+          style={[styles.attrWrap, overlayChip(darkbg)]}
           hitSlop={8}
         >
           <Text style={[styles.attribution, { color: colors.onSurfaceMuted }]}>Daten: </Text>
@@ -249,7 +252,7 @@ const styles = StyleSheet.create({
   },
   mapBtnText: { fontSize: fontSize.base, fontWeight: "800" },
 
-  attrWrap: { flexDirection: "row", justifyContent: "center", alignItems: "center", marginTop: spacing.sm },
+  attrWrap: { flexDirection: "row", justifyContent: "center", alignItems: "center", alignSelf: "center", marginTop: spacing.sm },
   attribution: { fontSize: fontSize.sm, textAlign: "center" },
   attrLink: { fontWeight: "800", textDecorationLine: "underline" },
 });

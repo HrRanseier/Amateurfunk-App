@@ -20,6 +20,8 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 
 import { ScreenHeader } from "@/src/components/ScreenHeader";
 import { fontSize, monoFont, radius as rad, spacing } from "@/src/theme/tokens";
+import { ScreenBg } from "@/src/components/ScreenBg";
+import { centered, overlayChip } from "@/src/theme/layout";
 import { useTheme } from "@/src/theme/useTheme";
 
 const BACKEND = process.env.EXPO_PUBLIC_BACKEND_URL ?? "";
@@ -52,7 +54,7 @@ function statusColor(status: string, colors: ReturnType<typeof useTheme>["colors
 }
 
 export default function RepeaterSearchScreen() {
-  const { colors } = useTheme();
+  const { colors, darkbg } = useTheme();
   const router = useRouter();
 
   // Text search + autocomplete
@@ -394,7 +396,7 @@ export default function RepeaterSearchScreen() {
             ))}
 
             {count > 0 && (
-              <Pressable testID="repeater-attribution" onPress={() => Linking.openURL(RB_URL)} style={styles.attrWrap} hitSlop={8}>
+              <Pressable testID="repeater-attribution" onPress={() => Linking.openURL(RB_URL)} style={[styles.attrWrap, overlayChip(darkbg)]} hitSlop={8}>
                 <Text style={[styles.attribution, { color: colors.onSurfaceMuted }]}>Daten: </Text>
                 <Text style={[styles.attribution, styles.attrLink, { color: colors.brand }]}>RepeaterBook.com</Text>
               </Pressable>
@@ -407,12 +409,13 @@ export default function RepeaterSearchScreen() {
   }, [hasCriteria, loading, error, results, count, pending, nearResult, radiusKm, colors]);
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.surface }]}>
+    <View style={styles.root}>
+      <ScreenBg bg={3} />
       <ScreenHeader title="Repeater-Finder" onBack={back} />
 
       <KeyboardAwareScrollView
         style={styles.flex}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, centered]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         bottomOffset={spacing.xl}
@@ -627,7 +630,7 @@ export default function RepeaterSearchScreen() {
               </Pressable>
             ) : null}
           </View>
-          <Text style={[styles.hint, { color: colors.onSurfaceMuted }]}>Toleranz ±0,0125 MHz · Komma oder Punkt.</Text>
+          <Text style={[styles.hint, overlayChip(darkbg), { color: colors.onSurfaceMuted }]}>Toleranz ±0,0125 MHz · Komma oder Punkt.</Text>
         </View>
 
         {/* Results */}
@@ -781,7 +784,7 @@ const styles = StyleSheet.create({
   },
   tagText: { fontSize: fontSize.sm, fontWeight: "700" },
 
-  attrWrap: { flexDirection: "row", justifyContent: "center", alignItems: "center", marginTop: spacing.sm },
+  attrWrap: { flexDirection: "row", justifyContent: "center", alignItems: "center", alignSelf: "center", marginTop: spacing.sm },
   attribution: { fontSize: fontSize.sm, textAlign: "center" },
   attrLink: { fontWeight: "800", textDecorationLine: "underline" },
 });

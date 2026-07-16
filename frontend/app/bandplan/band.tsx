@@ -6,10 +6,12 @@ import { getBand, SOURCE_NOTE } from "@/src/bandplan/data";
 import { formatBandwidth, powerRows, segmentRange } from "@/src/bandplan/frequency";
 import { ScreenHeader } from "@/src/components/ScreenHeader";
 import { fontSize, monoFont, radius, spacing } from "@/src/theme/tokens";
+import { ScreenBg } from "@/src/components/ScreenBg";
+import { centered, overlayChip } from "@/src/theme/layout";
 import { useTheme } from "@/src/theme/useTheme";
 
 export default function BandDetailScreen() {
-  const { colors } = useTheme();
+  const { colors, darkbg } = useTheme();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const band = getBand(id ?? "");
@@ -18,7 +20,8 @@ export default function BandDetailScreen() {
 
   if (!band) {
     return (
-      <View style={[styles.root, { backgroundColor: colors.surface }]}>
+      <View style={styles.root}>
+      <ScreenBg bg={4} />
         <ScreenHeader title="Bandplan" onBack={back} />
         <View style={styles.empty}>
           <Text style={{ color: colors.onSurfaceMuted }}>Band nicht gefunden.</Text>
@@ -28,9 +31,10 @@ export default function BandDetailScreen() {
   }
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.surface }]}>
+    <View style={styles.root}>
+      <ScreenBg bg={4} />
       <ScreenHeader title={`Bandplan · ${band.short}`} onBack={back} />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.content, centered]} showsVerticalScrollIndicator={false}>
         <View style={[styles.header, { backgroundColor: colors.surfaceSecondary, borderColor: colors.borderStrong }]}>
           <Text style={[styles.bandName, { color: colors.onSurface }]}>{band.name}</Text>
           <Text style={[styles.bandRange, { color: colors.brand }]}>{band.range}</Text>
@@ -99,7 +103,7 @@ export default function BandDetailScreen() {
           );
         })}
 
-        <Text style={[styles.source, { color: colors.onSurfaceMuted }]}>{SOURCE_NOTE}</Text>
+        <Text style={[styles.source, overlayChip(darkbg), { color: colors.onSurfaceMuted }]}>{SOURCE_NOTE}</Text>
       </ScrollView>
     </View>
   );

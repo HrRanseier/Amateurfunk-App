@@ -9,6 +9,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ToastProvider } from "@/src/components/Toast";
 import { useIconFonts } from "@/src/hooks/use-icon-fonts";
+import { DesignProvider, useDesign } from "@/src/theme/design";
 
 // Disable logbox errors etc so that users can see the app
 // and agent works as expected.
@@ -20,32 +21,35 @@ LogBox.ignoreAllLogs(true);
 // the family is registered — which throws on Android Expo Go.
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+function RootInner() {
   const [loaded, error] = useIconFonts();
   const scheme = useColorScheme();
+  const { mode, ready } = useDesign();
+  const darkbg = mode === "darkbg";
+  const dark = darkbg || scheme === "dark";
 
   useEffect(() => {
-    if (loaded || error) {
+    if ((loaded || error) && ready) {
       SplashScreen.hideAsync();
     }
-  }, [loaded, error]);
+  }, [loaded, error, ready]);
 
-  // If the CDN is unreachable we fall through on error rather than wedging
-  // the app — icons will tofu, but the app still boots.
-  if (!loaded && !error) return null;
+  // Gate the UI until BOTH icon fonts and the saved design choice are ready,
+  // so the correct theme/background is applied before the first render.
+  if ((!loaded && !error) || !ready) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <KeyboardProvider>
         <SafeAreaProvider>
           <ToastProvider>
-            <StatusBar style={scheme === "dark" ? "light" : "dark"} />
+            <StatusBar style={dark ? "light" : "dark"} />
             <Stack
               screenOptions={{
                 headerShown: false,
                 animation: "slide_from_right",
                 contentStyle: {
-                  backgroundColor: scheme === "dark" ? "#121212" : "#F5F5F5",
+                  backgroundColor: dark ? "#121212" : "#F5F5F5",
                 },
               }}
             />
@@ -53,5 +57,13 @@ export default function RootLayout() {
         </SafeAreaProvider>
       </KeyboardProvider>
     </GestureHandlerRootView>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <DesignProvider>
+      <RootInner />
+    </DesignProvider>
   );
 }
