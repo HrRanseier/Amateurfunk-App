@@ -94,3 +94,18 @@ Android-App für Amateurfunker. Hub-and-Module-Architektur: zentraler Startbilds
 ## Next Tasks
 - **Repeater-Finder Phase 2 — "In meiner Nähe"** (P1): `expo-location` foreground permission → GPS coords, distance calc against cached DACH data (or scrape `radius_result.php`), 1–200 km radius slider, Band/Mode filters.
 - **Q-Codes** module (P2, currently disabled placeholder tile).
+
+## Update 2026-07 (Repeater-Finder REWORK — unified combinable filter screen; merges Phase 1 + Phase 2)
+- [x] `/repeater` fully rewritten into ONE screen with combinable filters (no tabs). Tile subtitle → "DACH · Umkreis".
+- [x] **Text search + live autocomplete:** `repeater-text-input` (debounced) → `GET /api/repeater/suggest?q=` (case-insensitive prefix on callsign OR location tokens; callsign-prefix ranked first). Dropdown `repeater-suggest` / `repeater-suggest-item-<id>`; tap → detail. ("Zug" → DB0ZU Zugspitze.)
+- [x] **Dynamic band chips:** `GET /api/repeater/bands` returns ONLY bands actually present in the DACH cache with counts, freq-ascending (10m 19, 6m 5, 2m 310, 70cm 1479, 23cm 121, 13cm 2, 3cm 3). `repeater-band-<key>` multi-select. Bands derived server-side from `RB_BANDS` boundaries (`_band_for_freq`).
+- [x] **Frequency filter:** `repeater-freq-input` MHz, comma+dot, ±0.0125 MHz — combinable with bands.
+- [x] **Universal radius filter:** `repeater-radius-toggle`; GPS via `expo-location` (benefit pre-explanation + `repeater-gps-button`; denied → manual, blocked → `repeater-open-settings`) OR manual `repeater-location-input` + `repeater-geocode-button` (Nominatim proxy, server-side ≤1 req/s + descriptive UA). `repeater-radius-slider` 1–200 km default 30. Applies on top of any active freq/band filters.
+- [x] **Unified search:** `GET /api/repeater/search?freq=&bands=csv&near=lat,lon&radius=` — intersection. No `near` → full DACH list sorted alphabetically by location + `repeater-count` "X Treffer" (no hard cutoff). With `near` → server-side haversine, sorted by distance, `distanceKm` badge, `pendingCoords`.
+- [x] **Lazy coordinate cache:** coords fetched ONLY when a repeater appears in a real search result; persisted in MongoDB `repeater_coords` + mirrored in `_coords`. Bounded synchronous warm (cap 30) on radius queries + throttled background worker (~0.3 s) fills the rest; frontend shows a "X weitere Standorte werden geladen …" banner + `repeater-refresh-button` + auto-poll. Coverage grows with usage (per user's explicit choice — no preemptive bulk scrape).
+- [x] Permissions added to `app.json` (iOS `NSLocationWhenInUseUsageDescription`, Android COARSE/FINE location, `expo-location` plugin). `expo-location@19.0.8` installed.
+- [x] Tested green iteration_9 (backend 15/15 pytest + full frontend flow + regressions). Lint clean. NOTE: GPS button is native-only (browser geolocation blocked in web preview); manual location works everywhere.
+
+## Next Tasks (updated)
+- **Q-Codes** module (P2, currently disabled placeholder tile).
+- Optional cleanup: two web-only RN deprecation warnings (`shadow*`, `pointerEvents`); optional `server.py` split into routers as it now spans 3 domains (OpenAIP, RepeaterBook, geocode).
