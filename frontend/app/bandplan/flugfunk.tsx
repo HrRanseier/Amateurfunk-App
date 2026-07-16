@@ -2,7 +2,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, Keyboard, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Image, Keyboard, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 
 import { ScreenHeader } from "@/src/components/ScreenHeader";
@@ -10,12 +10,6 @@ import { fontSize, monoFont, radius, spacing } from "@/src/theme/tokens";
 import { useTheme } from "@/src/theme/useTheme";
 
 const BACKEND = process.env.EXPO_PUBLIC_BACKEND_URL ?? "";
-
-const DISCLAIMER =
-  "Nur zur allgemeinen Information und für Hörzwecke. Nicht für Navigationszwecke oder " +
-  "sicherheitsrelevante Entscheidungen geeignet. Verbindlich ist ausschließlich die offizielle " +
-  "AIP Deutschland der DFS Deutsche Flugsicherung. Diese Frequenzen sind dem Flugfunkdienst " +
-  "zugewiesen, nicht dem Amateurfunk – kein Senderecht über eine Amateurfunk-Lizenz.";
 
 type Freq = { name: string; value: string; valueMHz: number; primary: boolean };
 type Airport = { name: string; icao?: string; iata?: string; country?: string; frequencies: Freq[]; matched?: Freq[] };
@@ -179,9 +173,13 @@ export default function FlugfunkScreen() {
               );
             })}
 
-            <View style={[styles.disclaimerBox, { backgroundColor: colors.surface, borderColor: colors.warning }]}>
-              <MaterialCommunityIcons name="alert-octagon-outline" size={18} color={colors.warning} />
-              <Text style={[styles.disclaimerText, { color: colors.onSurface }]}>{DISCLAIMER}</Text>
+            <View style={styles.signWrap}>
+              <Image
+                source={require("../../assets/images/no-transmit.png")}
+                style={styles.signImage}
+                resizeMode="contain"
+                accessibilityLabel="Senden verboten, nur Empfang!"
+              />
             </View>
             <Text style={[styles.attribution, { color: colors.onSurfaceMuted }]}>Daten: OpenAIP (openaip.net)</Text>
           </View>
@@ -221,7 +219,7 @@ const styles = StyleSheet.create({
   freqName: { flex: 1, fontSize: fontSize.base, fontWeight: "600" },
   freqVal: { fontSize: fontSize.base, fontWeight: "800", fontFamily: monoFont },
 
-  disclaimerBox: { flexDirection: "row", gap: spacing.sm, borderRadius: radius.md, borderWidth: 1, padding: spacing.md },
-  disclaimerText: { flex: 1, fontSize: fontSize.sm, lineHeight: 18, fontWeight: "600" },
+  signWrap: { alignItems: "center", justifyContent: "center", backgroundColor: "#FFFFFF", borderRadius: radius.lg, borderWidth: 1, borderColor: "#E0E0E0", padding: spacing.md },
+  signImage: { width: 240, height: 240 },
   attribution: { fontSize: fontSize.sm, textAlign: "center", marginTop: spacing.xs },
 });
