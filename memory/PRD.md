@@ -161,3 +161,10 @@ Android-App für Amateurfunker. Hub-and-Module-Architektur: zentraler Startbilds
 
 ## Update 2026-07 (Morse EMPFANG — Löschen-Button für Transkript)
 - [x] Über dem Empfangs-Transkript (`app/morse.tsx`, ZONE 2) neuer Header „EMPFANG" + **Löschen-Button** (`receive-clear-button`), nur sichtbar wenn `receiver.transcript.length > 0`. Ruft `receiver.clear()` → setzt Decoder zurück + leert Transkript, **ohne** das Mikrofon zu stoppen (Hören läuft weiter). Native-only sichtbar (Transkript wird nur im echten Build per Mikrofon befüllt). Lint sauber, /morse rendert fehlerfrei.
+
+## Update 2026-07 (APK erreicht Backend nicht — Vorschau ok, APK Fehler) — ECHTE Ursache gefunden & behoben
+- [x] **Symptom:** Online-Module (Repeater/Flugfunk) funktionieren in der Emergent-Vorschau, aber im installierten APK kommt „keine Internetverbindung". Handy erreicht die Backend-URL im Browser (JSON) → Netzwerk ok.
+- [x] **Root Cause (deployment_agent):** `/app/.gitignore` (Zeilen 83–85: `.env`, `.env.*`, `*.env`) ignorierte `frontend/.env` + `backend/.env`. Dadurch fehlte beim Build die `EXPO_PUBLIC_BACKEND_URL` (Expo backt `EXPO_PUBLIC_*` zur Build-Zeit ein). Ergebnis: `const BACKEND = process.env.EXPO_PUBLIC_BACKEND_URL ?? ""` → leer → `fetch("/api/...")` = relative URL. Web-Preview löst gegen Origin auf (funktioniert), natives APK hat keinen Origin → Fehler. Erklärt exakt „Preview ok, APK Fehler".
+- [x] **Fix:** `.env`-Zeilen aus `/app/.gitignore` entfernt (git check-ignore: nicht mehr ignoriert; deployment_agent re-scan `gitignore_blocks_required_files: false`). `.env` kommt jetzt in den Build; Werte werden vom Deploy-System gesetzt.
+- [x] **Bewusst NICHT angefasst:** deployment_agent schlug zusätzlich `--tunnel` (Supervisor) + `EXPO_PACKAGER_PROXY_URL`→ngrok vor. Beides geschützte, plattformverwaltete Vorschau-Settings (System-Regel: NICHT editieren); Vorschau läuft stabil über `*.preview.emergentagent.com`; kein Bezug zum APK-Backend-Aufruf.
+- [x] **User-Aktion nötig:** erneut Deploy/Publish → neues APK bauen → neu installieren. Erst dann greift der Fix am Gerät.
