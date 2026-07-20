@@ -24,7 +24,7 @@ import { ScreenBg } from "@/src/components/ScreenBg";
 import { centered, overlayChip } from "@/src/theme/layout";
 import { useTheme } from "@/src/theme/useTheme";
 
-const BACKEND = process.env.EXPO_PUBLIC_BACKEND_URL ?? "";
+const BACKEND = process.env.EXPO_PUBLIC_BACKEND_URL || "https://funk-toolbox.preview.emergentagent.com";
 const RB_URL = "https://www.repeaterbook.com";
 
 type Repeater = {

@@ -12,7 +12,7 @@ import { ScreenBg } from "@/src/components/ScreenBg";
 import { centered, overlayChip } from "@/src/theme/layout";
 import { useTheme } from "@/src/theme/useTheme";
 
-const BACKEND = process.env.EXPO_PUBLIC_BACKEND_URL ?? "";
+const BACKEND = process.env.EXPO_PUBLIC_BACKEND_URL || "https://funk-toolbox.preview.emergentagent.com";
 
 type Freq = { name: string; value: string; valueMHz: number; primary: boolean };
 type Airport = { name: string; icao?: string; iata?: string; country?: string; frequencies: Freq[]; matched?: Freq[] };
