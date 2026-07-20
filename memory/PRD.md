@@ -168,3 +168,9 @@ Android-App für Amateurfunker. Hub-and-Module-Architektur: zentraler Startbilds
 - [x] **Fix:** `.env`-Zeilen aus `/app/.gitignore` entfernt (git check-ignore: nicht mehr ignoriert; deployment_agent re-scan `gitignore_blocks_required_files: false`). `.env` kommt jetzt in den Build; Werte werden vom Deploy-System gesetzt.
 - [x] **Bewusst NICHT angefasst:** deployment_agent schlug zusätzlich `--tunnel` (Supervisor) + `EXPO_PACKAGER_PROXY_URL`→ngrok vor. Beides geschützte, plattformverwaltete Vorschau-Settings (System-Regel: NICHT editieren); Vorschau läuft stabil über `*.preview.emergentagent.com`; kein Bezug zum APK-Backend-Aufruf.
 - [x] **User-Aktion nötig:** erneut Deploy/Publish → neues APK bauen → neu installieren. Erst dann greift der Fix am Gerät.
+
+## Update 2026-07 (Morse EMPFANG Robustheit — Tonalitäts-Gate gegen Klopfen + Auto-Speed) — Regression grün iteration_15, native-Validierung offen
+- [x] **Bug (S10):** (1) Aufs Display klopfen → Mikro dekodiert falsche T/E; (2) echter Ton vom Lautsprecher nur sporadisch/falsch dekodiert. Mikro sehr empfindlich.
+- [x] **Ursache:** `bandTonePeak` nahm den Max-Bin — ein breitbandiger Impuls (Klopfen) maxt jeden Bin aus → Fehl-Trigger. Kein Windowing → Leakage → Hüllkurve zerhackt. Decoder an WPM-Regler geseedet → Dit/Dash-Fehlklassifikation.
+- [x] **Fix (`goertzel.bandToneStats`, `useMorseReceiver`):** Hann-Fenster (Anti-Leakage) + **Tonalität** = Peak/Bandmittel. ON nur wenn mag>=onTh UND tonality>=6 (reiner Ton ~34 im Node-Test 450–1200 Hz; Klopfen ~1.3; Weißrauschen ~4.8 → beide verworfen). OFF bei mag<=offTh ODER tonality<3. Decoder jetzt **unseeded** → lockt automatisch auf die tatsächliche Empfangsgeschwindigkeit; Silence-Flush nutzt adaptierte `unitMs`.
+- [x] **Native-only:** nicht im Web dekodierbar; Regression grün (iteration_15, Send/Presets/Stopp/Persistenz intakt), DSP Node-validiert. Muss im neuen Build am Gerät geprüft werden.
