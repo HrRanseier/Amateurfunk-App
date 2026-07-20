@@ -187,6 +187,24 @@ export default function MorseScreen() {
             </View>
           )}
 
+          {receiver.transcript.length > 0 && (
+            <View style={styles.rxHeader}>
+              <Text style={[styles.rxHeaderLabel, { color: colors.onSurfaceMuted }]}>EMPFANG</Text>
+              <Pressable
+                testID="receive-clear-button"
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  receiver.clear();
+                }}
+                hitSlop={8}
+                style={styles.rxClearBtn}
+              >
+                <MaterialCommunityIcons name="trash-can-outline" size={16} color={colors.brand} />
+                <Text style={[styles.rxClearText, { color: colors.brand }]}>Löschen</Text>
+              </Pressable>
+            </View>
+          )}
+
           <ScrollView
             ref={scrollRef}
             style={styles.flex}
@@ -423,6 +441,16 @@ const styles = StyleSheet.create({
   rxTrack: { flex: 1, height: 8, borderRadius: radius.pill, overflow: "hidden" },
   rxFill: { height: "100%", borderRadius: radius.pill },
   rxLabel: { fontSize: fontSize.sm, fontWeight: "700", minWidth: 74, textAlign: "right" },
+  rxHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.xs,
+  },
+  rxHeaderLabel: { fontSize: fontSize.sm, fontWeight: "800", letterSpacing: 1 },
+  rxClearBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 4, paddingHorizontal: spacing.sm },
+  rxClearText: { fontSize: fontSize.base, fontWeight: "700" },
   transContent: { flexGrow: 1, paddingVertical: spacing.md },
   emptyWrap: { flex: 1, alignItems: "center", justifyContent: "center", gap: spacing.sm, paddingVertical: spacing.xxxl },
   emptyText: { fontSize: fontSize.base },
