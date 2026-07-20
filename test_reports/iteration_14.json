@@ -1,0 +1,29 @@
+{
+  "summary": "Independent E2E confirmation that Flugfunk and Repeater work end-to-end against the CURRENT preview backend (https://funk-toolbox.preview.emergentagent.com). Backend: 6/6 pytest cases green (test_flugfunk.py all 4 + test_repeater.py bands + freq 145.6875). Direct curl on /api/repeater/search?freq=145.6 -> 200 with count=54 (HB9EI Airolo 145.6000 first). Frontend (390x844): /repeater — typed '145.600' into repeater-freq-input, within ~3.5s repeater-results appeared, repeater-count = '54 Treffer' (>0), repeater-error NEVER shown; screenshot confirms grid of 145.6 hits (HB9EI Airolo CH, DB0AF Altdoebern DE, DB0YB ...). /bandplan/flugfunk — typed 'EDDM', tapped ff-search-button, ff-results appeared showing full MUENCHEN frequency list (MÜNCHEN APRON 1/2/3, DELIVERY, TOWER SOUTH 120.505, GND SOUTH, TOWER NORTH★ 118.705, GND NORTH, ATIS 123.130), ff-error NEVER shown. Conclusion: code + backend are correct in the CURRENT session. The on-device 'keine Internetverbindung kann hergestellt werden' on the user's Samsung S10 is therefore NOT a code bug in the current tree — it is a stale EXPO_PUBLIC_BACKEND_URL baked into the previously installed APK (EXPO_PUBLIC_* is inlined at build time). Only fix is to republish/reinstall the APK from the current session.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_flugfunk.py",
+    "/app/backend/tests/test_repeater.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "None for code. USER-SIDE ACTION: republish EAS build so EXPO_PUBLIC_BACKEND_URL from the current /app/frontend/.env (https://funk-toolbox.preview.emergentagent.com) is inlined, then reinstall the APK on the Samsung S10. The two 'keine Internetverbindung' errors on Flugfunk/Repeater will disappear."
+  ],
+  "critical_code_review_comments": [
+    "repeater/index.tsx and bandplan/flugfunk.tsx both correctly read process.env.EXPO_PUBLIC_BACKEND_URL and surface network errors via repeater-error / ff-error testIDs — verified never triggered in-session.",
+    "Backend cache: /api/repeater/bands + /api/repeater/search served in <100ms with 1939 cached repeaters; /api/flugfunk warm ~1s (OpenAIP), well within UX budget."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% (6/6)", "frontend": "100% (2/2 flows: repeater-freq-input=54 Treffer, ff-search EDDM=MUENCHEN frequencies)"},
+  "seed_data_creation": "None.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Backend endpoints are live-scraping/caching (RepeaterBook + OpenAIP) — expect >200 tests already in repo; run only the 4 requested if scope is tight. Frontend testIDs: repeater-freq-input, repeater-results, repeater-count ('N Treffer'), repeater-error, ff-input, ff-search-button, ff-results, ff-error. Preview URL comes from /app/frontend/.env EXPO_PUBLIC_BACKEND_URL.",
+  "rca_of_issue": "Reported issue: Samsung S10 installed APK shows 'keine Internetverbindung kann hergestellt werden' on Flugfunk + Repeater while Morse (offline) works. Root cause (confirmed by ruling out code/backend in this iteration): EXPO_PUBLIC_BACKEND_URL is a build-time constant inlined by Metro/Babel via @expo/env — the user's APK was built in a previous session with a different (now unreachable) preview URL. In-session both endpoints return 200 and the UI wires them correctly (repeater-count '54 Treffer'; ff-results with MUENCHEN Tower North 118.705). Mitigation: republish EAS build in the current session and reinstall on device; no code change required."
+}

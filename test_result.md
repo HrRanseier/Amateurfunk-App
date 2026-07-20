@@ -328,7 +328,7 @@ backend:
 
 test_plan:
   current_focus:
-    - "Morse RECEIVE fix — band tone detection (250–1500 Hz) instead of single narrow bin + live level meter + native error surfacing (Samsung S10 report: hearing morse doesn't work)"
+    - "Repeater + Flugfunk backend-dependent flows — verify they work end-to-end with current EXPO_PUBLIC_BACKEND_URL (user reported 'no internet' on installed build; isolate stale-build-URL vs code bug)"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -336,7 +336,19 @@ test_plan:
 agent_communication:
     -agent: "main"
     -message: |
-      MORSE RECEIVE FIX (bug: Samsung S10 build, mic granted, hearing morse does nothing). Frontend only, /morse.
+      USER REPORT: on the INSTALLED build (Samsung S10) Flugfunk + Repeater show "keine Internetverbindung".
+      Morse (offline) works. Backend verified healthy: curl to BOTH http://localhost:8001 and the EXTERNAL
+      https://funk-toolbox.preview.emergentagent.com returns HTTP 200 for /api/repeater/bands and /api/flugfunk/airports.
+      CORS allow_origins=["*"]. Main-agent screenshots already show Repeater "54 Treffer" for 145.600 and Flugfunk EDDM
+      loading fine in the CURRENT preview. Hypothesis: the installed APK has a STALE EXPO_PUBLIC_BACKEND_URL baked in from
+      before the fork (EXPO_PUBLIC_* is inlined at build time) → user must republish/rebuild. NO code change was made.
+      PLEASE VERIFY (both backend + frontend) that the two backend-dependent flows work end-to-end in the current env, to
+      authoritatively rule out a code/backend bug:
+      BACKEND: GET /api/repeater/bands (200, bands[]), GET /api/repeater/search?freq=145.6 (200, results[]/count),
+               GET /api/flugfunk/airports?search=EDDM (200, airports[] with frequencies), GET /api/flugfunk/frequency?mhz=118.705&country=DE.
+      FRONTEND (390x844): /repeater — enter 145.600 in repeater-freq-input => repeater-results with repeater-count > 0 (no repeater-error).
+               /bandplan/flugfunk — enter EDDM in ff-input, tap ff-search-button => ff-results (no ff-error).
+      Report clearly whether these work; if they work, the on-device failure is a stale-build-URL issue (rebuild needed), not a bug.
       IMPORTANT: The actual mic decoding is a NATIVE-ONLY feature — it CANNOT run in the web preview
       (Constants.executionEnvironment on web => micAvailable=false). So on web the mic button will keep showing
       "Live-Dekodierung nur im veröffentlichten Build". Do NOT fail the task because decoding doesn't run on web.
