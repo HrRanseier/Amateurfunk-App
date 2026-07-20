@@ -111,6 +111,17 @@ user_problem_statement: |
   with injected CSS/JS hiding nav/address/activity/footer. Same theme/light-dark/layout as other modules.
 
 frontend:
+  - task: "Morse RECEIVE robustness — tonality gate (reject taps/broadband), Hann window (anti-leakage), self-calibrating decoder (auto speed lock). Fixes: taps decode as T/E; real tone only sporadically/incorrectly decoded"
+    implemented: true
+    working: "NA"
+    file: "src/morse/goertzel.ts, src/morse/useMorseReceiver.ts"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "USER (installed build, S10): (1) tapping the phone display makes the mic decode spurious T/E; (2) real morse from a speaker is only sporadically/incorrectly decoded. Root cause of (1): previous bandTonePeak used the max bin magnitude, which a broadband transient (tap/knock) easily maxes out. FIX: goertzel.bandToneStats now (a) applies a Hann window (curbs spectral leakage so a tone between bins isn't split below threshold -> less envelope chopping), and (b) returns a TONALITY score = peakPower/meanBandPower. Detection turns ON only when mag>=onTh AND tonality>=6 (a pure tone concentrates energy in one bin -> tonality ~34 in Node tests across 450-1200 Hz; a tap ~1.3; white noise ~4.8 -> both rejected). Turns OFF when mag<=offTh OR tonality<3. Also: receiver decoder is now UNSEEDED (MorseDecoder({})) so it auto-locks to the ACTUAL received speed instead of trusting the WPM send-slider (which caused dit/dash misclassification); the long-silence flush now uses the decoder's adapted unitMs. NATIVE-ONLY: cannot be decoded on web (micAvailable=false -> shows 'Live-Dekodierung nur im veröffentlichten Build'); needs on-device build validation. Node-validated the DSP; lint clean; web smoke test: /morse renders, mic tap shows unavailable notice, no crash, send/presets/stop intact."
   - task: "Morse RECEIVE fix — band tone detection (250–1500 Hz) instead of single narrow bin + live level meter + native error surfacing (Samsung S10 report: hearing morse doesn't work)"
     implemented: true
     working: "NA"
@@ -328,7 +339,7 @@ backend:
 
 test_plan:
   current_focus:
-    - "Repeater + Flugfunk backend-dependent flows — verify they work end-to-end with current EXPO_PUBLIC_BACKEND_URL (user reported 'no internet' on installed build; isolate stale-build-URL vs code bug)"
+    - "Morse RECEIVE robustness — tonality gate (reject taps/broadband), Hann window (anti-leakage), self-calibrating decoder (auto speed lock). Fixes: taps decode as T/E; real tone only sporadically/incorrectly decoded"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -336,7 +347,18 @@ test_plan:
 agent_communication:
     -agent: "main"
     -message: |
-      USER REPORT: on the INSTALLED build (Samsung S10) Flugfunk + Repeater show "keine Internetverbindung".
+      MORSE RECEIVE robustness fix (frontend only, /morse). The decoding itself is NATIVE-ONLY and CANNOT run on web
+      (micAvailable=false -> the mic button just shows 'Live-Dekodierung nur im veröffentlichten Build'). DO NOT fail the task
+      because decoding does not run on web. Please ONLY confirm NO REGRESSION from the receiver DSP changes:
+      1) /morse loads (no red screen/crash). Header back/settings work. Tapping header-mic-button shows the
+         receive-unavailable-notice on web and does not crash.
+      2) SEND side unchanged (regression): 5 preset buttons (preset-button-1..5), long-press editor (preset-editor-input/save),
+         repeat chips (preset-repeat-1/-2/-3/-inf), short-tap send raises queue-count + turns send-stop-button SOLID red,
+         infinite + STOP returns to '0 in Warteschlange', live typing works, Reset clears, presets persist across reload.
+      3) receive-clear-button and receive-level-meter are conditional (only when transcript>0 / while listening) — NOT expected
+         visible on web; just confirm no render error.
+      Files changed: src/morse/goertzel.ts (bandToneStats: Hann window + tonality), src/morse/useMorseReceiver.ts
+      (tonality gate + unseeded auto-adapting decoder). DSP already Node-validated. Backend: none — SKIP.
       Morse (offline) works. Backend verified healthy: curl to BOTH http://localhost:8001 and the EXTERNAL
       https://funk-toolbox.preview.emergentagent.com returns HTTP 200 for /api/repeater/bands and /api/flugfunk/airports.
       CORS allow_origins=["*"]. Main-agent screenshots already show Repeater "54 Treffer" for 145.600 and Flugfunk EDDM

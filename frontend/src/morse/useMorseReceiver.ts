@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { MorseDecoder } from "./decoder";
-import { bandTonePeak } from "./goertzel";
+import { bandToneStats } from "./goertzel";
 import { unitMsFromWpm } from "./morse";
 import { micAvailable, requestMicPermission, startMic, stopMic } from "./nativeAudio";
 
@@ -12,6 +12,13 @@ export type ReceiverStatus = "idle" | "calibrating" | "listening" | "denied" | "
 // take the strongest bin — the operator does not have to tune the exact pitch.
 const RX_LO_HZ = 250;
 const RX_HI_HZ = 1500;
+
+// A real CW tone concentrates energy in one bin (high tonality). A knock/tap on
+// the phone is broadband (tonality ~1) and MUST be rejected so it does not
+// decode as spurious E/T. Turning ON needs strong tonality; only a collapse of
+// tonality (or level) turns OFF.
+const TONALITY_ON = 6;
+const TONALITY_OFF = 3;
 
 // Microphone -> band tone detector -> adaptive decoder pipeline. Only active on
 // a real build (see nativeAudio.micAvailable). Handles a ~1s noise calibration,
@@ -37,7 +44,7 @@ export function useMorseReceiver(seedWpm: number) {
   const lastLevelTs = useRef(0);
 
   const onFrame = useCallback((samples: Float32Array, sr: number) => {
-    const mag = bandTonePeak(samples, sr, RX_LO_HZ, RX_HI_HZ).mag;
+    const { mag, tonality } = bandToneStats(samples, sr, RX_LO_HZ, RX_HI_HZ);
     const frameMs = (samples.length / sr) * 1000;
     const now = Date.now();
 
@@ -50,7 +57,7 @@ export function useMorseReceiver(seedWpm: number) {
       if (now - calibStartRef.current >= 1000) {
         const vals = calibValsRef.current;
         const avg = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0.01;
-        noiseRef.current = Math.max(avg, 0.002);
+        noiseRef.current = Math.max(avg, 0.001);
         calibratingRef.current = false;
         toneRef.current = false;
         accumRef.current = 0;
@@ -59,8 +66,8 @@ export function useMorseReceiver(seedWpm: number) {
       return;
     }
 
-    const onTh = Math.max(noiseRef.current * 6, 0.02);
-    const offTh = Math.max(noiseRef.current * 3, 0.01);
+    const onTh = Math.max(noiseRef.current * 6, 0.01);
+    const offTh = Math.max(noiseRef.current * 3, 0.005);
 
     if (now - lastLevelTs.current > 60) {
       lastLevelTs.current = now;
@@ -69,8 +76,10 @@ export function useMorseReceiver(seedWpm: number) {
 
     const prev = toneRef.current;
     let cur = prev;
-    if (!prev && mag >= onTh) cur = true;
-    else if (prev && mag <= offTh) cur = false;
+    // Turn ON only for a strong, NARROW-BAND tone (rejects broadband taps/knocks).
+    if (!prev && mag >= onTh && tonality >= TONALITY_ON) cur = true;
+    // Turn OFF when the level drops OR the tone loses its narrow-band character.
+    else if (prev && (mag <= offTh || tonality < TONALITY_OFF)) cur = false;
 
     if (cur !== prev) {
       if (prev) decoderRef.current?.pushTone(accumRef.current);
@@ -80,7 +89,9 @@ export function useMorseReceiver(seedWpm: number) {
     } else {
       accumRef.current += frameMs;
       // A long silence flushes the last letter/word without needing more sound.
-      if (!cur && accumRef.current > unitMsFromWpm(seedRef.current) * 12) {
+      // Base the timeout on the decoder's own adapted unit (auto speed lock).
+      const unit = decoderRef.current?.unitMs ?? unitMsFromWpm(seedRef.current);
+      if (!cur && accumRef.current > unit * 12) {
         decoderRef.current?.pushGap(accumRef.current);
         accumRef.current = 0;
       }
@@ -107,7 +118,9 @@ export function useMorseReceiver(seedWpm: number) {
       return;
     }
     setError("");
-    decoderRef.current = new MorseDecoder({ initialUnitMs: unitMsFromWpm(seedRef.current) }, setTranscript);
+    // Unseeded: the decoder locks onto the ACTUAL received speed from the first
+    // elements, instead of trusting the WPM slider (which is only for sending).
+    decoderRef.current = new MorseDecoder({}, setTranscript);
     calibValsRef.current = [];
     calibStartRef.current = Date.now();
     calibratingRef.current = true;
