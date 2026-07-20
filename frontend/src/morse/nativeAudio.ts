@@ -71,16 +71,39 @@ export async function requestMicPermission(): Promise<boolean> {
   }
 }
 
-export async function startMic(cb: MicFrameCb): Promise<{ remove: () => void } | null> {
+export async function startMic(
+  cb: MicFrameCb,
+  onError?: (message: string) => void,
+): Promise<{ remove: () => void } | null> {
   if (!micAvailable || !mod) return null;
   try {
-    const sub = mod.addFrameListener((e: { pcmBase64: string; sampleRate?: number; level?: number }) => {
+    const frameSub = mod.addFrameListener((e: { pcmBase64: string; sampleRate?: number; level?: number }) => {
       const bytes = base64ToBytes(e.pcmBase64);
       cb(pcm16ToFloat32(bytes), e.sampleRate ?? 16000, e.level ?? 0);
     });
+    // Surface native capture errors (e.g. Android "AudioRecord read error")
+    // instead of failing silently.
+    const errSub =
+      onError && typeof mod.addErrorListener === "function"
+        ? mod.addErrorListener((e: { message?: string }) => onError(e?.message || "Unbekannter Mikrofonfehler"))
+        : null;
     await mod.start({ sampleRate: 16000, frameDurationMs: 40, channels: 1, enableLevelMeter: true });
-    return sub;
-  } catch {
+    return {
+      remove: () => {
+        try {
+          frameSub?.remove();
+        } catch {
+          /* ignore */
+        }
+        try {
+          errSub?.remove();
+        } catch {
+          /* ignore */
+        }
+      },
+    };
+  } catch (e) {
+    onError?.(e instanceof Error ? e.message : "Mikrofon-Start fehlgeschlagen");
     return null;
   }
 }

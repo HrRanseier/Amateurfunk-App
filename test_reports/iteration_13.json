@@ -1,0 +1,25 @@
+{
+  "summary": "Frontend-only regression on /morse after receiver refactor (bandTonePeak scan 250-1500 Hz, useMorseReceiver(wpm), level meter, error banner). ALL 5 acceptance items PASS on public preview (390x844). Verified: no red screen; header-back-button + header-settings-button (SettingsSheet opens with Frequenz/Geschwindigkeit sliders + Ton/Licht/Vibration toggles) + header-mic-button all work; tapping mic on web shows receive-unavailable-notice ('Live-Dekodierung nur im veröffentlichten Build') without crashing; receive-level-meter and receive-error-notice correctly NOT rendered on web. SEND regression re-confirmed: 5 preset buttons render 'Leer'; empty short-tap opens PresetEditor (does NOT send); long-press opens editor, save 'CQ DE' activates preset 2; repeat chips 1×/2×/3×/∞ visible; short-tap filled preset raises queue-count to '4 in Warteschlange' and turns send-stop-button SOLID red (rgb(244,67,54) opacity 1); infinite (∞) keeps queue-count >0 (observed '3 in Warteschlange') with solid-red STOP and pressing STOP returns to '0 in Warteschlange'; live typing 'hello' auto-enqueues (queue-count=3); Reset clears queue + input. Persistence: preset 2 = 'CQ DE' with repeat 'inf' survives page reload via localStorage funk_morse_presets_v1. Only non-blocking web-only warnings observed: shadow*/pointerEvents deprecation (expected).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": ["/app/test_reports/iteration_13.json"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "useMorseReceiver.ts: signature useMorseReceiver(seedWpm) — freq no longer used for RX, matches request. bandTonePeak scans 250-1500 Hz so exact tuning is not required. Adaptive noise calibration (1s) + hysteresis thresholds (onTh 6×noise, offTh 3×noise) look sound. Long-silence flush at 12×unitMs correctly finalizes trailing letter.",
+    "goertzel.ts::bandTonePeak: returns sqrt(power) as magnitude and iterates only the target band — O((kHi-kLo)*N), fine for 40 ms frames at 16 kHz sr.",
+    "nativeAudio.ts: micAvailable correctly gates on Platform!=web && executionEnvironment!='storeClient' && mod.start present, so Expo Go and web both correctly show 'unavailable'. addErrorListener wired through startMic->onError->useMorseReceiver.setError, which flips status to 'error' and stops the stream — good failure surface for the S10 issue.",
+    "morse.tsx: receive-level-meter is gated on receiver.listening and receive-error-notice on status==='error', so neither renders on web (unavailable path), matching the expectation."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped per request)", "frontend": "100%"},
+  "seed_data_creation": "Cleared localStorage 'funk_morse_presets_v1' at start; created preset 2 = 'CQ DE' with repeat='inf' during test — persisted intentionally to prove persistence across reload.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Receiver refactor introduced ZERO regressions on web. NOTE: the actual mic-based Morse decoding is a NATIVE-ONLY feature (expo-stream-audio + PermissionsAndroid.RECORD_AUDIO) and CANNOT be validated in the web preview or Expo Go — on web micAvailable=false and status='unavailable'. Any future validation of the Samsung S10 bug fix (band 250-1500 Hz tone scan, level meter, error banner) MUST be done on a real dev/prod build on device. Preset localStorage key: funk_morse_presets_v1. STOP button colors: solid red rgb(244,67,54) opacity 1 while sending vs grey rgb(18,18,18) opacity 0.45 when idle.",
+  "rca_of_issue": "Original bug (mic RX did nothing on Samsung S10) already root-caused and fixed by main agent: (1) single narrow Goertzel bin at configured freq ±12 Hz almost never matched actual received CW tone — replaced with bandTonePeak scan 250-1500 Hz; (2) zero on-screen feedback — added receive-level-meter with 'Kalibriere…/Höre…' status; (3) native capture errors were silent — now surfaced via mod.addErrorListener into receive-error-notice banner. Web preview cannot validate the fix itself (native-only); this iteration only confirms the refactor caused no regressions to the /morse screen."
+}

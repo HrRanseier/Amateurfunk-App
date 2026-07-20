@@ -49,7 +49,7 @@ export default function MorseScreen() {
   const [camPerm, requestCamPerm] = useCameraPermissions();
   const audioRef = useRef<MorseAudioHandle | null>(null);
 
-  const receiver = useMorseReceiver(freq, wpm);
+  const receiver = useMorseReceiver(wpm);
   const sender = useMorseSender({
     freq,
     wpm,
@@ -151,6 +151,39 @@ export default function MorseScreen() {
               <Pressable testID="mic-open-settings-button" onPress={() => Linking.openSettings()} hitSlop={8}>
                 <Text style={[styles.bannerLink, { color: colors.brand }]}>Einstellungen</Text>
               </Pressable>
+            </View>
+          )}
+
+          {receiver.status === "error" && (
+            <View
+              testID="receive-error-notice"
+              style={[styles.banner, { backgroundColor: colors.surfaceSecondary, borderColor: colors.error }]}
+            >
+              <MaterialCommunityIcons name="alert-circle-outline" size={16} color={colors.error} />
+              <Text numberOfLines={2} style={[styles.bannerText, { color: colors.onSurface }]}>
+                Mikrofonfehler: {receiver.error || "unbekannt"}
+              </Text>
+            </View>
+          )}
+
+          {receiver.listening && (
+            <View testID="receive-level-meter" style={styles.rxMeter}>
+              <MaterialCommunityIcons
+                name={receiver.calibrating ? "timer-sand" : "waveform"}
+                size={16}
+                color={colors.brand}
+              />
+              <View style={[styles.rxTrack, { backgroundColor: colors.surfaceTertiary }]}>
+                <View
+                  style={[
+                    styles.rxFill,
+                    { width: `${Math.round(Math.min(1, receiver.level) * 100)}%`, backgroundColor: colors.brandPrimary },
+                  ]}
+                />
+              </View>
+              <Text style={[styles.rxLabel, { color: colors.onSurfaceMuted }]}>
+                {receiver.calibrating ? "Kalibriere …" : "Höre …"}
+              </Text>
             </View>
           )}
 
@@ -380,6 +413,16 @@ const styles = StyleSheet.create({
   },
   bannerText: { flex: 1, fontSize: fontSize.sm },
   bannerLink: { fontSize: fontSize.sm, fontWeight: "700" },
+  rxMeter: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.xs,
+  },
+  rxTrack: { flex: 1, height: 8, borderRadius: radius.pill, overflow: "hidden" },
+  rxFill: { height: "100%", borderRadius: radius.pill },
+  rxLabel: { fontSize: fontSize.sm, fontWeight: "700", minWidth: 74, textAlign: "right" },
   transContent: { flexGrow: 1, paddingVertical: spacing.md },
   emptyWrap: { flex: 1, alignItems: "center", justifyContent: "center", gap: spacing.sm, paddingVertical: spacing.xxxl },
   emptyText: { fontSize: fontSize.base },

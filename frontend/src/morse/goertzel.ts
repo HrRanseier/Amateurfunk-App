@@ -26,3 +26,40 @@ export function rmsLevel(samples: Float32Array): number {
   for (let i = 0; i < samples.length; i++) sum += samples[i] * samples[i];
   return Math.sqrt(sum / Math.max(samples.length, 1));
 }
+
+// Peak tone magnitude across a frequency band. Robust to the exact CW pitch:
+// scans Goertzel bins from loHz..hiHz and returns the strongest normalized
+// magnitude (sqrt of power) plus the bin frequency. Used so the operator does
+// NOT have to tune the precise sidetone frequency to detect an incoming tone —
+// a single fixed bin (~±12 Hz) almost never matches a real received signal.
+export function bandTonePeak(
+  samples: Float32Array,
+  sampleRate: number,
+  loHz: number,
+  hiHz: number,
+): { mag: number; freq: number } {
+  const n = samples.length;
+  if (n === 0) return { mag: 0, freq: loHz };
+  const binHz = sampleRate / n;
+  const kLo = Math.max(1, Math.floor(loHz / binHz));
+  const kHi = Math.min((n >> 1) - 1, Math.ceil(hiHz / binHz));
+  let best = 0;
+  let bestK = kLo;
+  for (let k = kLo; k <= kHi; k++) {
+    const omega = (2 * Math.PI * k) / n;
+    const coeff = 2 * Math.cos(omega);
+    let s1 = 0;
+    let s2 = 0;
+    for (let i = 0; i < n; i++) {
+      const s0 = samples[i] + coeff * s1 - s2;
+      s2 = s1;
+      s1 = s0;
+    }
+    const power = Math.max(s1 * s1 + s2 * s2 - coeff * s1 * s2, 0) / n;
+    if (power > best) {
+      best = power;
+      bestK = k;
+    }
+  }
+  return { mag: Math.sqrt(best), freq: bestK * binHz };
+}

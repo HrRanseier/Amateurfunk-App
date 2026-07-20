@@ -111,6 +111,17 @@ user_problem_statement: |
   with injected CSS/JS hiding nav/address/activity/footer. Same theme/light-dark/layout as other modules.
 
 frontend:
+  - task: "Morse RECEIVE fix — band tone detection (250–1500 Hz) instead of single narrow bin + live level meter + native error surfacing (Samsung S10 report: hearing morse doesn't work)"
+    implemented: true
+    working: "NA"
+    file: "src/morse/goertzel.ts, src/morse/useMorseReceiver.ts, src/morse/nativeAudio.ts, app/morse.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "USER BUG (installed build, Samsung S10, mic granted): Morse RECEIVE/decoding does nothing. Root cause: receiver used a single narrow Goertzel bin at the configured freq (default 700 Hz, ±~12 Hz) — a real received CW tone almost never matches that exact pitch, so nothing is ever detected, and there was NO feedback. FIX: (1) new goertzel.bandTonePeak() scans a whole band and returns the strongest bin; receiver now detects a tone anywhere 250–1500 Hz (no exact tuning needed). Validated in Node: tones 450/600/700/800/1100 Hz all → strong mag ~6.3 w/ correct detected freq; quiet noise 0.02, silence 0. (2) useMorseReceiver signature changed to useMorseReceiver(seedWpm) — freq no longer needed for RX. (3) Live level meter (testID receive-level-meter) + 'Kalibriere…/Höre…' shown while listening so the operator sees the mic picking up sound. (4) Native errors surfaced via addErrorListener -> status 'error' + receive-error-notice banner (no more silent failure). NATIVE-ONLY feature: cannot be decoded in web preview (micAvailable=false -> shows 'Live-Dekodierung nur im veröffentlichten Build'). Needs on-device build validation by the user. Web smoke test: screen renders, mic tap shows unavailable notice, no crash, presets/stop intact."
   - task: "Morse Betrieb — 5 preset text blocks (persisted text + per-preset repeat 1x/2x/3x/∞), tap-to-send via shared queue, long-press edit, empty-opens-editor + immediate STOP switch"
     implemented: true
     working: "NA"
@@ -317,7 +328,7 @@ backend:
 
 test_plan:
   current_focus:
-    - "Morse Betrieb — 5 preset text blocks (persisted text + per-preset repeat 1x/2x/3x/∞), tap-to-send via shared queue, long-press edit, empty-opens-editor + immediate STOP switch"
+    - "Morse RECEIVE fix — band tone detection (250–1500 Hz) instead of single narrow bin + live level meter + native error surfacing (Samsung S10 report: hearing morse doesn't work)"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -325,7 +336,22 @@ test_plan:
 agent_communication:
     -agent: "main"
     -message: |
-      MORSE PRESETS + STOP (frontend only, /morse). Web preview 390x844. Test:
+      MORSE RECEIVE FIX (bug: Samsung S10 build, mic granted, hearing morse does nothing). Frontend only, /morse.
+      IMPORTANT: The actual mic decoding is a NATIVE-ONLY feature — it CANNOT run in the web preview
+      (Constants.executionEnvironment on web => micAvailable=false). So on web the mic button will keep showing
+      "Live-Dekodierung nur im veröffentlichten Build". Do NOT fail the task because decoding doesn't run on web.
+      What to VERIFY on web (390x844):
+      1) NO REGRESSION from the receiver refactor: /morse loads, header back/mic/settings work, tapping the mic
+         (header-mic-button) shows the receive-unavailable-notice (native-only) and does NOT crash / no red screen.
+      2) The SEND side still works fully (this was just re-tested green in iteration_12, re-confirm quickly):
+         5 preset buttons (preset-button-1..5), long-press edit (preset-editor-input/save), repeat chips
+         (preset-repeat-1/-2/-3/-inf), short-tap send raises queue-count + turns send-stop-button SOLID red,
+         infinite send + STOP returns to 0, live typing in send-text-input works, Reset clears, persistence across reload.
+      3) Confirm the new testIDs exist in code and render conditionally (receive-level-meter + receive-error-notice only
+         appear while listening / on native error — expected NOT visible on web).
+      Code changed: src/morse/goertzel.ts (bandTonePeak), src/morse/useMorseReceiver.ts (signature useMorseReceiver(wpm),
+      band detection, error state), src/morse/nativeAudio.ts (addErrorListener), app/morse.tsx (level meter + error banner).
+      Backend: none — SKIP.
       1) FOOTER LAYOUT: above the "Text tippen …" input there is a row of 5 numbered preset buttons (preset-button-1..5),
          all showing "Leer" (dashed) initially. A red STOP button (send-stop-button) sits to the RIGHT of the input,
          greyed/disabled when idle.

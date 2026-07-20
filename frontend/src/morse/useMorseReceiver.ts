@@ -1,22 +1,27 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { MorseDecoder } from "./decoder";
-import { goertzelPower } from "./goertzel";
+import { bandTonePeak } from "./goertzel";
 import { unitMsFromWpm } from "./morse";
 import { micAvailable, requestMicPermission, startMic, stopMic } from "./nativeAudio";
 
-export type ReceiverStatus = "idle" | "calibrating" | "listening" | "denied" | "unavailable";
+export type ReceiverStatus = "idle" | "calibrating" | "listening" | "denied" | "unavailable" | "error";
 
-// Microphone -> Goertzel -> adaptive decoder pipeline. Only active on a real
-// build (see nativeAudio.micAvailable). Handles a ~1s noise calibration, an
-// on/off envelope with hysteresis, and streams decoded text into `transcript`.
-export function useMorseReceiver(freq: number, seedWpm: number) {
+// Tone band the decoder listens on. A single narrow Goertzel bin (~±12 Hz)
+// almost never matches a real received signal, so we scan this whole band and
+// take the strongest bin — the operator does not have to tune the exact pitch.
+const RX_LO_HZ = 250;
+const RX_HI_HZ = 1500;
+
+// Microphone -> band tone detector -> adaptive decoder pipeline. Only active on
+// a real build (see nativeAudio.micAvailable). Handles a ~1s noise calibration,
+// an on/off envelope with hysteresis, and streams decoded text into `transcript`.
+export function useMorseReceiver(seedWpm: number) {
   const [status, setStatus] = useState<ReceiverStatus>(micAvailable ? "idle" : "unavailable");
   const [level, setLevel] = useState(0);
   const [transcript, setTranscript] = useState("");
+  const [error, setError] = useState("");
 
-  const freqRef = useRef(freq);
-  useEffect(() => { freqRef.current = freq; }, [freq]);
   const seedRef = useRef(seedWpm);
   useEffect(() => { seedRef.current = seedWpm; }, [seedWpm]);
 
@@ -32,7 +37,7 @@ export function useMorseReceiver(freq: number, seedWpm: number) {
   const lastLevelTs = useRef(0);
 
   const onFrame = useCallback((samples: Float32Array, sr: number) => {
-    const mag = Math.sqrt(goertzelPower(samples, freqRef.current, sr));
+    const mag = bandTonePeak(samples, sr, RX_LO_HZ, RX_HI_HZ).mag;
     const frameMs = (samples.length / sr) * 1000;
     const now = Date.now();
 
@@ -101,6 +106,7 @@ export function useMorseReceiver(freq: number, seedWpm: number) {
       setStatus("denied");
       return;
     }
+    setError("");
     decoderRef.current = new MorseDecoder({ initialUnitMs: unitMsFromWpm(seedRef.current) }, setTranscript);
     calibValsRef.current = [];
     calibStartRef.current = Date.now();
@@ -108,9 +114,16 @@ export function useMorseReceiver(freq: number, seedWpm: number) {
     toneRef.current = false;
     accumRef.current = 0;
     setStatus("calibrating");
-    const sub = await startMic(onFrame);
+    const sub = await startMic(onFrame, (msg) => {
+      setError(msg);
+      setStatus("error");
+      calibratingRef.current = false;
+      setLevel(0);
+      stopMic(subRef.current);
+      subRef.current = null;
+    });
     if (!sub) {
-      setStatus("unavailable");
+      setStatus((s) => (s === "error" ? s : "unavailable"));
       calibratingRef.current = false;
       return;
     }
@@ -137,5 +150,6 @@ export function useMorseReceiver(freq: number, seedWpm: number) {
     transcript,
     toggle,
     clear,
+    error,
   };
 }
