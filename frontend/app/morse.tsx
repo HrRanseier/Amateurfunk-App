@@ -10,13 +10,22 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useToast } from "@/src/components/Toast";
 import { MorseAudio, MorseAudioHandle } from "@/src/morse/MorseAudio";
 import { MorseHeader } from "@/src/morse/MorseHeader";
+import { PresetEditor } from "@/src/morse/PresetEditor";
 import { SettingsSheet } from "@/src/morse/SettingsSheet";
+import { usePresets } from "@/src/morse/usePresets";
 import { useMorseReceiver } from "@/src/morse/useMorseReceiver";
-import { SendOutputs, useMorseSender } from "@/src/morse/useMorseSender";
+import { RepeatMode, SendOutputs, useMorseSender } from "@/src/morse/useMorseSender";
 import { fontSize, monoFont, radius, spacing } from "@/src/theme/tokens";
 import { ScreenBg } from "@/src/components/ScreenBg";
 import { centered } from "@/src/theme/layout";
 import { useTheme } from "@/src/theme/useTheme";
+
+const REPEAT_OPTIONS: { mode: RepeatMode; label: string }[] = [
+  { mode: 1, label: "1×" },
+  { mode: 2, label: "2×" },
+  { mode: 3, label: "3×" },
+  { mode: "inf", label: "∞" },
+];
 
 export default function MorseScreen() {
   const { colors } = useTheme();
@@ -31,6 +40,11 @@ export default function MorseScreen() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [torchOn, setTorchOn] = useState(false);
   const [bannerVisible, setBannerVisible] = useState(true);
+
+  // Preset text blocks.
+  const { presets, setText: setPresetText, setRepeat: setPresetRepeat } = usePresets();
+  const [activePreset, setActivePreset] = useState<number | null>(null);
+  const [editorIndex, setEditorIndex] = useState<number | null>(null);
 
   const [camPerm, requestCamPerm] = useCameraPermissions();
   const audioRef = useRef<MorseAudioHandle | null>(null);
@@ -60,6 +74,38 @@ export default function MorseScreen() {
       }
     }
     setOutputs((p) => ({ ...p, [key]: !p[key] }));
+  };
+
+  // Short tap: empty preset -> open editor; filled preset -> select it and feed
+  // its text into the shared send queue with its stored repeat setting.
+  const onPressPreset = (i: number) => {
+    Haptics.selectionAsync();
+    const p = presets[i];
+    if (!p.text.trim()) {
+      setEditorIndex(i);
+      return;
+    }
+    setActivePreset(i);
+    sender.enqueue(p.text, p.repeat);
+  };
+
+  // Long press: edit the stored text.
+  const onLongPressPreset = (i: number) => {
+    Haptics.selectionAsync();
+    setEditorIndex(i);
+  };
+
+  const onSavePreset = (value: string) => {
+    if (editorIndex == null) return;
+    const trimmed = value.trim();
+    setPresetText(editorIndex, trimmed);
+    if (trimmed) setActivePreset(editorIndex);
+    setEditorIndex(null);
+  };
+
+  const onStop = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    sender.clear();
   };
 
   return (
@@ -140,53 +186,154 @@ export default function MorseScreen() {
             },
           ]}
         >
-          <View style={styles.metaRow}>
-            <Text testID="queue-count" style={[styles.queueText, { color: colors.onSurfaceMuted }]}>
-              {sender.queueCount} in Warteschlange
-            </Text>
-            <Pressable testID="send-clear-button" onPress={sender.clear} hitSlop={8}>
-              <Text style={[styles.resetLink, { color: colors.brand }]}>Reset</Text>
-            </Pressable>
-          </View>
+          <View style={[styles.footerInner, centered]}>
+            <View style={styles.metaRow}>
+              <Text testID="queue-count" style={[styles.queueText, { color: colors.onSurfaceMuted }]}>
+                {sender.queueCount} in Warteschlange
+              </Text>
+              <Pressable testID="send-clear-button" onPress={sender.clear} hitSlop={8}>
+                <Text style={[styles.resetLink, { color: colors.brand }]}>Reset</Text>
+              </Pressable>
+            </View>
 
-          <Text testID="send-preview" numberOfLines={1} style={styles.preview}>
-            {sender.fullText.length === 0 ? (
-              <Text style={{ color: colors.onSurfaceMuted, fontFamily: monoFont }}>Sende-Vorschau …</Text>
-            ) : (
-              <>
-                <Text style={{ color: colors.onSurfaceMuted, fontFamily: monoFont }}>{sender.sentText}</Text>
-                {sender.onAir != null && (
-                  <Text
-                    style={{
-                      color: colors.brand,
-                      fontWeight: "800",
-                      textDecorationLine: "underline",
-                      fontFamily: monoFont,
-                    }}
-                  >
-                    {sender.onAir}
+            <Text testID="send-preview" numberOfLines={1} style={styles.preview}>
+              {sender.onAir == null && sender.pending.length === 0 ? (
+                <Text style={{ color: colors.onSurfaceMuted, fontFamily: monoFont }}>Sende-Vorschau …</Text>
+              ) : (
+                <>
+                  {sender.onAir != null && (
+                    <Text
+                      style={{
+                        color: colors.brand,
+                        fontWeight: "800",
+                        textDecorationLine: "underline",
+                        fontFamily: monoFont,
+                      }}
+                    >
+                      {sender.onAir}
+                    </Text>
+                  )}
+                  <Text style={{ color: colors.onSurfaceMuted, opacity: 0.5, fontFamily: monoFont }}>
+                    {sender.pending}
                   </Text>
-                )}
-                <Text style={{ color: colors.onSurfaceMuted, opacity: 0.5, fontFamily: monoFont }}>
-                  {sender.pending}
-                </Text>
-              </>
-            )}
-          </Text>
+                </>
+              )}
+            </Text>
 
-          <TextInput
-            testID="send-text-input"
-            value={sender.fullText}
-            onChangeText={sender.onChangeText}
-            placeholder="Text tippen …"
-            placeholderTextColor={colors.onSurfaceMuted}
-            autoCapitalize="characters"
-            autoCorrect={false}
-            style={[
-              styles.input,
-              { backgroundColor: colors.surface, borderColor: colors.border, color: colors.onSurface },
-            ]}
-          />
+            {/* Repeat setting for the currently active preset */}
+            {activePreset != null && (
+              <View style={styles.repeatRow}>
+                <Text style={[styles.repeatLabel, { color: colors.onSurfaceMuted }]}>
+                  Wdh. Baustein {activePreset + 1}
+                </Text>
+                <View style={styles.repeatChips}>
+                  {REPEAT_OPTIONS.map((opt) => {
+                    const on = presets[activePreset].repeat === opt.mode;
+                    return (
+                      <Pressable
+                        key={String(opt.mode)}
+                        testID={`preset-repeat-${opt.mode}`}
+                        onPress={() => {
+                          Haptics.selectionAsync();
+                          setPresetRepeat(activePreset, opt.mode);
+                        }}
+                        style={[
+                          styles.repeatChip,
+                          {
+                            backgroundColor: on ? colors.brandPrimary : colors.surface,
+                            borderColor: on ? colors.brandPrimary : colors.border,
+                          },
+                        ]}
+                      >
+                        <Text style={[styles.repeatChipText, { color: on ? colors.onBrandPrimary : colors.onSurface }]}>
+                          {opt.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
+
+            {/* Preset text blocks (always visible), directly above the input */}
+            <View style={styles.presetRow}>
+              {presets.map((p, i) => {
+                const filled = p.text.trim().length > 0;
+                const active = activePreset === i;
+                return (
+                  <Pressable
+                    key={i}
+                    testID={`preset-button-${i + 1}`}
+                    onPress={() => onPressPreset(i)}
+                    onLongPress={() => onLongPressPreset(i)}
+                    delayLongPress={350}
+                    style={[
+                      styles.preset,
+                      {
+                        backgroundColor: colors.surface,
+                        borderColor: active ? colors.brandPrimary : colors.border,
+                        borderWidth: active ? 2 : 1,
+                        borderStyle: filled ? "solid" : "dashed",
+                        opacity: filled ? 1 : 0.75,
+                      },
+                    ]}
+                  >
+                    <View style={styles.presetTop}>
+                      <Text style={[styles.presetNum, { color: active ? colors.brand : colors.onSurfaceMuted }]}>
+                        {i + 1}
+                      </Text>
+                      {filled && p.repeat === "inf" && (
+                        <MaterialCommunityIcons name="infinity" size={12} color={colors.brand} />
+                      )}
+                    </View>
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        styles.presetLabel,
+                        {
+                          color: filled ? colors.onSurface : colors.onSurfaceMuted,
+                          fontStyle: filled ? "normal" : "italic",
+                        },
+                      ]}
+                    >
+                      {filled ? p.text : "Leer"}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {/* Input + immediate-stop switch */}
+            <View style={styles.inputRow}>
+              <TextInput
+                testID="send-text-input"
+                value={sender.fullText}
+                onChangeText={sender.onChangeText}
+                placeholder="Text tippen …"
+                placeholderTextColor={colors.onSurfaceMuted}
+                autoCapitalize="characters"
+                autoCorrect={false}
+                style={[
+                  styles.input,
+                  { backgroundColor: colors.surface, borderColor: colors.border, color: colors.onSurface },
+                ]}
+              />
+              <Pressable
+                testID="send-stop-button"
+                onPress={onStop}
+                disabled={!sender.sending}
+                style={[
+                  styles.stopBtn,
+                  { borderColor: colors.error },
+                  sender.sending
+                    ? { backgroundColor: colors.error, opacity: 1 }
+                    : { backgroundColor: colors.surface, opacity: 0.45 },
+                ]}
+              >
+                <MaterialCommunityIcons name="stop" size={26} color={sender.sending ? "#FFFFFF" : colors.error} />
+              </Pressable>
+            </View>
+          </View>
         </View>
       </KeyboardAvoidingView>
 
@@ -203,6 +350,14 @@ export default function MorseScreen() {
         setWpm={setWpm}
         outputs={outputs}
         onToggleOutput={toggleOutput}
+      />
+
+      <PresetEditor
+        visible={editorIndex != null}
+        index={editorIndex ?? 0}
+        initialText={editorIndex != null ? presets[editorIndex].text : ""}
+        onSave={onSavePreset}
+        onClose={() => setEditorIndex(null)}
       />
     </View>
   );
@@ -233,13 +388,44 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
-    gap: spacing.xs,
   },
+  footerInner: { gap: spacing.sm },
   metaRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   queueText: { fontSize: fontSize.sm, fontWeight: "600" },
   resetLink: { fontSize: fontSize.sm, fontWeight: "700" },
   preview: { fontSize: fontSize.base, letterSpacing: 1, minHeight: 20 },
+
+  repeatRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  repeatLabel: { fontSize: fontSize.sm, fontWeight: "700" },
+  repeatChips: { flexDirection: "row", gap: spacing.xs, flex: 1, justifyContent: "flex-end" },
+  repeatChip: {
+    minWidth: 42,
+    height: 32,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: spacing.sm,
+  },
+  repeatChipText: { fontSize: fontSize.sm, fontWeight: "800" },
+
+  presetRow: { flexDirection: "row", gap: spacing.xs },
+  preset: {
+    flex: 1,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.sm,
+    minHeight: 48,
+    justifyContent: "center",
+    gap: 2,
+  },
+  presetTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 16 },
+  presetNum: { fontSize: fontSize.base, fontWeight: "800" },
+  presetLabel: { fontSize: 10, fontWeight: "600" },
+
+  inputRow: { flexDirection: "row", alignItems: "flex-end", gap: spacing.sm },
   input: {
+    flex: 1,
     minHeight: 48,
     maxHeight: 96,
     borderRadius: radius.md,
@@ -247,6 +433,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     fontSize: fontSize.lg,
-    marginTop: spacing.xs,
+  },
+  stopBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.md,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

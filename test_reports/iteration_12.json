@@ -1,0 +1,24 @@
+{
+  "summary": "Frontend-only regression on /morse for new 5-preset feature. All 8 acceptance items PASS on the public preview (390x844). Verified: 5 numbered preset buttons + STOP button layout, empty short-tap opens editor without sending, long-press opens editor and saving activates the preset with repeat chips + 'Wdh. Baustein 2' label, finite 2× send drains queue and STOP toggles solid-red↔grey, infinite send keeps queue>0 with solid-red STOP and pressing STOP immediately returns queue-count to '0 in Warteschlange' AND the infinite loop remains terminated (queue stays 0 after 3s wait — no restart), live typing still enqueues + STOP goes red + Reset clears, presets (text + repeat='inf') persist via localStorage key funk_morse_presets_v1 across a full page reload. Only non-blocking web-only warnings observed: 'shadow*' and 'pointerEvents' deprecation (expected, called out in review).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": ["/app/test_reports/iteration_12.json"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "useMorseSender.ts: unified queue design is clean — infiniteRef is reset by clear(), which guarantees the STOP semantics observed in Test D (queue stays 0, loop dead).",
+    "usePresets.ts: normalize() correctly validates repeat + text on load and falls back to defaults, so a corrupted JSON entry cannot crash the screen.",
+    "morse.tsx: presetRow is placed directly above the input (correct ordering per requirement a); STOP button visibility state (bg red rgb(244,67,54) vs grey rgb(18,18,18) @ opacity 0.45) confirmed via computed styles."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped per request)", "frontend": "100%"},
+  "seed_data_creation": "Cleared localStorage 'funk_morse_presets_v1' at start; created preset 2 = 'CQ DE' with repeat='inf' during test — persisted intentionally to prove persistence.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Feature is fully working. Preset localStorage key: funk_morse_presets_v1. STOP button color test: solid red = rgb(244,67,54) opacity 1; disabled/idle = rgb(18,18,18) opacity 0.45. Live-typing autoCapitalize cannot be validated via Playwright page.fill() (bypasses keyboard events); if verification is needed use page.keyboard.type() instead — the morse engine still transmits case-insensitively so this is a test-tool artifact, not an app bug.",
+  "rca_of_issue": "N/A — no bugs found."
+}

@@ -111,6 +111,17 @@ user_problem_statement: |
   with injected CSS/JS hiding nav/address/activity/footer. Same theme/light-dark/layout as other modules.
 
 frontend:
+  - task: "Morse Betrieb — 5 preset text blocks (persisted text + per-preset repeat 1x/2x/3x/∞), tap-to-send via shared queue, long-press edit, empty-opens-editor + immediate STOP switch"
+    implemented: true
+    working: "NA"
+    file: "app/morse.tsx, src/morse/useMorseSender.ts, src/morse/usePresets.ts, src/morse/PresetEditor.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "NEW feature on /morse. Sender rewritten to a UNIFIED character queue: live typing AND preset blocks feed the SAME pump()/charTimeline (no separate send logic). Footer (above input, always visible): row of 5 compact numbered preset buttons (testID preset-button-1..5). Empty preset shows dashed italic 'Leer'; short-tap opens the editor. Filled preset short-tap => selects it (active highlight) + enqueues its text with its stored repeat. Long-press (delayLongPress 350) any preset => PresetEditor modal (preset-editor-input multiline, preset-editor-save/cancel) to edit text of any length. Repeat chips row (visible only when a preset is active): testID preset-repeat-1 / -2 / -3 / -inf, default 1x, persisted per preset. Presets (text+repeat) persist in AsyncStorage key funk_morse_presets_v1 (survive restart). ∞ = continuous repeat with a word-gap pause between repeats until stopped. STOP switch (testID send-stop-button) sits next to the input, ALWAYS visible: greyed red when idle (disabled), SOLID red when sending (live or preset). Press => immediate abort (audio.stop + clearTimeout + Vibration.cancel + torch off), wipes the whole queue incl. infinite, queue-count back to 0. Self-verified via screenshots: preset create/edit, active highlight + chips, ∞ send (queue-count 9, stop solid red), stop => 0 + greyed. Audio uses Web Audio on web; on-device tone/vibe in Expo Go, torch/mic native-only."
   - task: "GLOBAL DESIGN REFACTOR — Design switcher (Minimalist ↔ Dunkler Hintergrund), tablet max-width, gradient headers, dark text chips, ScreenBg wrapper across all screens"
     implemented: true
     working: "NA"
@@ -306,7 +317,7 @@ backend:
 
 test_plan:
   current_focus:
-    - "GLOBAL DESIGN REFACTOR — Design switcher (Minimalist ↔ Dunkler Hintergrund), tablet max-width, gradient headers, dark text chips, ScreenBg wrapper across all screens"
+    - "Morse Betrieb — 5 preset text blocks (persisted text + per-preset repeat 1x/2x/3x/∞), tap-to-send via shared queue, long-press edit, empty-opens-editor + immediate STOP switch"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -314,7 +325,25 @@ test_plan:
 agent_communication:
     -agent: "main"
     -message: |
-      GLOBAL DESIGN REFACTOR — full FRONTEND regression needed (web preview 390x844). This was a bulk edit across 15+ files
+      MORSE PRESETS + STOP (frontend only, /morse). Web preview 390x844. Test:
+      1) FOOTER LAYOUT: above the "Text tippen …" input there is a row of 5 numbered preset buttons (preset-button-1..5),
+         all showing "Leer" (dashed) initially. A red STOP button (send-stop-button) sits to the RIGHT of the input,
+         greyed/disabled when idle.
+      2) EDIT: long-press preset-button-2 (hold ~500ms) => PresetEditor opens (preset-editor-input). Type "TEST DE DJ1IR",
+         tap preset-editor-save => preset 2 now shows the text (solid), and the repeat chip row appears
+         ("Wdh. Baustein 2" + preset-repeat-1/-2/-3/-inf, 1× selected by default).
+      3) EMPTY TAP: short-tap an empty preset (e.g. preset-button-5) => opens the editor directly (does NOT send).
+      4) SEND (finite): with preset 2 selected, tap preset-repeat-2, then short-tap preset-button-2 => queue-count rises,
+         send-stop-button turns SOLID red while sending, preview shows chars; it drains and returns to "0 in Warteschlange",
+         stop greys out. (Web plays Web-Audio tone — no need to verify sound, verify the queue/stop STATE.)
+      5) SEND (infinite): tap preset-repeat-inf, short-tap preset-button-2 => keeps sending (queue-count stays > 0, stop SOLID red).
+         Tap send-stop-button => IMMEDIATE stop: queue-count back to "0 in Warteschlange", stop greyed. Infinite loop must end.
+      6) LIVE TYPING still works: type in send-text-input (autouppercases) => queue-count rises, send-preview shows on-air+pending,
+         stop turns red during send; Reset (send-clear-button) clears. Backspacing not-yet-sent chars removes them from the queue.
+      7) PERSISTENCE: after setting presets, reload the page => preset texts + their repeat settings are still there
+         (AsyncStorage key funk_morse_presets_v1).
+      8) REGRESSION: header back, mic toggle (native-only banner ok), settings gear opens SettingsSheet; transcript area scrolls.
+      No backend involved — SKIP backend.
       injecting a <ScreenBg> root wrapper + tablet max-width + dark text chips into EVERY screen. Goal: confirm NO regressions
       were introduced (scrollviews, text inputs, touch targets, list rendering, navigation) in BOTH design modes.
       STEPS:

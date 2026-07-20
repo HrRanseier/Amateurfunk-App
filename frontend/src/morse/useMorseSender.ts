@@ -15,17 +15,26 @@ type Params = {
   camGranted: boolean;
 };
 
-// Live, character-by-character transmission engine. Each newly typed character
-// is immediately converted to Morse and queued; the queue is drained one
-// character at a time over the selected outputs (tone / light / vibration).
-export function useMorseSender({ freq, wpm, outputs, audioRef, setTorch, camGranted }: Params) {
-  const [text, setText] = useState("");
-  const [sentCount, setSentCount] = useState(0);
-  const [onAirIndex, setOnAirIndex] = useState<number | null>(null);
+export type RepeatMode = 1 | 2 | 3 | "inf";
 
+// Single, unified transmission engine. Both the live text input AND the preset
+// text blocks feed the SAME character queue, drained one character at a time by
+// pump() over the selected outputs (tone / light / vibration). There is only
+// one timing model (charTimeline) — no separate send logic per source.
+export function useMorseSender({ freq, wpm, outputs, audioRef, setTorch, camGranted }: Params) {
+  // Live input value (bound to the TextInput).
+  const [text, setText] = useState("");
   const textRef = useRef("");
-  const sentRef = useRef(0);
+
+  // Unified send queue: characters not yet fully sent. While transmitting,
+  // index 0 is the on-air character. Presets + live typing both append here.
+  const queueRef = useRef("");
+  const [pending, setPending] = useState(""); // chars still waiting (excludes on-air)
+  const [onAir, setOnAir] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+
   const txRef = useRef(false);
+  const infiniteRef = useRef<string | null>(null); // text to repeat until stopped
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const freqRef = useRef(freq);
@@ -36,6 +45,11 @@ export function useMorseSender({ freq, wpm, outputs, audioRef, setTorch, camGran
   useEffect(() => { wpmRef.current = wpm; }, [wpm]);
   useEffect(() => { outRef.current = outputs; }, [outputs]);
   useEffect(() => { camRef.current = camGranted; }, [camGranted]);
+
+  const syncPending = useCallback(() => {
+    const q = queueRef.current;
+    setPending(txRef.current ? q.slice(1) : q);
+  }, []);
 
   const transmit = useCallback(
     (segments: MorseSegment[]) => {
@@ -58,38 +72,80 @@ export function useMorseSender({ freq, wpm, outputs, audioRef, setTorch, camGran
 
   const pump = useCallback(() => {
     if (txRef.current) return;
-    const start = sentRef.current;
-    if (start >= textRef.current.length) return;
+    if (queueRef.current.length === 0) {
+      // Queue drained. Repeat forever if an infinite block is active, using a
+      // single word-gap (leading space) as the pause between repeats.
+      if (infiniteRef.current != null) {
+        queueRef.current = " " + infiniteRef.current;
+      } else {
+        setSending(false);
+        setOnAir(null);
+        setPending("");
+        return;
+      }
+    }
     txRef.current = true;
-    setOnAirIndex(start);
-    const ch = textRef.current[start];
+    setSending(true);
+    const ch = queueRef.current[0];
+    setOnAir(ch);
+    setPending(queueRef.current.slice(1));
     const { segments, durationMs } = charTimeline(ch, unitMsFromWpm(wpmRef.current));
     transmit(segments);
     const t = setTimeout(() => {
-      sentRef.current = Math.min(start + 1, textRef.current.length);
-      setSentCount(sentRef.current);
-      setOnAirIndex(null);
+      queueRef.current = queueRef.current.slice(1);
       txRef.current = false;
+      setOnAir(null);
+      syncPending();
       pump();
     }, Math.max(durationMs, 1));
     timers.current.push(t);
-  }, [transmit]);
+  }, [transmit, syncPending]);
 
+  // Live typing → same queue. Diff prev vs next: enqueue newly added characters,
+  // and drop not-yet-sent characters the user deleted (keeps the on-air char).
   const onChangeText = useCallback(
     (next: string) => {
-      // Already-sent characters cannot be un-sent; clamp the pointer if the
-      // user deletes into the sent region.
-      if (next.length < sentRef.current) {
-        sentRef.current = next.length;
-        setSentCount(next.length);
+      const prev = textRef.current;
+      let c = 0;
+      while (c < prev.length && c < next.length && prev[c] === next[c]) c++;
+      const removed = prev.length - c;
+      const added = next.slice(c);
+      if (removed > 0 && queueRef.current.length > 0) {
+        const minKeep = txRef.current ? 1 : 0;
+        const newLen = Math.max(minKeep, queueRef.current.length - removed);
+        queueRef.current = queueRef.current.slice(0, newLen);
       }
+      if (added) queueRef.current += added;
       textRef.current = next;
       setText(next);
+      syncPending();
       pump();
     },
-    [pump],
+    [pump, syncPending],
   );
 
+  // Preset block → same queue. Finite repeat appends N copies (word-gap between
+  // them); "inf" keeps repeating until stop() is called.
+  const enqueue = useCallback(
+    (raw: string, repeat: RepeatMode) => {
+      const s = raw.trim();
+      if (!s) return;
+      const sep = queueRef.current.length > 0 ? " " : "";
+      if (repeat === "inf") {
+        infiniteRef.current = s;
+        queueRef.current += sep + s;
+      } else {
+        const copies = Array.from({ length: repeat }, () => s).join(" ");
+        queueRef.current += sep + copies;
+      }
+      syncPending();
+      pump();
+    },
+    [pump, syncPending],
+  );
+
+  // Immediate stop: abort the running character NOW (no waiting for it to end),
+  // wipe the entire remaining queue (incl. infinite repeat), reset to idle.
   const clear = useCallback(() => {
     timers.current.forEach(clearTimeout);
     timers.current = [];
@@ -97,11 +153,13 @@ export function useMorseSender({ freq, wpm, outputs, audioRef, setTorch, camGran
     Vibration.cancel();
     setTorch(false);
     txRef.current = false;
-    sentRef.current = 0;
+    infiniteRef.current = null;
+    queueRef.current = "";
     textRef.current = "";
     setText("");
-    setSentCount(0);
-    setOnAirIndex(null);
+    setPending("");
+    setOnAir(null);
+    setSending(false);
   }, [audioRef, setTorch]);
 
   useEffect(
@@ -113,11 +171,7 @@ export function useMorseSender({ freq, wpm, outputs, audioRef, setTorch, camGran
     [audioRef],
   );
 
-  const nextIdx = onAirIndex ?? sentCount;
-  const sentText = text.slice(0, nextIdx);
-  const onAir = onAirIndex != null ? text[onAirIndex] ?? null : null;
-  const pending = text.slice(onAirIndex != null ? onAirIndex + 1 : sentCount);
-  const queueCount = Math.max(0, text.length - (onAirIndex != null ? onAirIndex + 1 : sentCount));
+  const queueCount = pending.length;
 
-  return { fullText: text, sentText, onAir, pending, onChangeText, queueCount, clear };
+  return { fullText: text, onAir, pending, sending, onChangeText, enqueue, queueCount, clear };
 }
