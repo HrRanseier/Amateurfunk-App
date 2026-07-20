@@ -137,3 +137,11 @@ Android-App für Amateurfunker. Hub-and-Module-Architektur: zentraler Startbilds
 ## Offene / optionale Aufgaben
 - Optional (nicht blockierend, web-only Konsolen-Warnungen): `shadow*` → `boxShadow` in `app/repeater/index.tsx` (suggestBox); `pointerEvents`-Prop → `style.pointerEvents` in `ScreenBg`/`ScreenHeader`/`app/index.tsx`.
 - Optional: `server.py` (>600 Zeilen, 3 Domains) in Router aufteilen.
+
+## Update 2026-07 (Morse Betrieb — 5 Textbausteine + Sofort-Stopp) — getestet grün iteration_12
+- [x] **Einheitliche Sende-Warteschlange** (`src/morse/useMorseSender.ts` neu): Live-Eingabe UND Textbausteine speisen DENSELBEN `pump()`/`charTimeline` — keine separate Sendelogik. `queueRef` (String) wird zeichenweise abgearbeitet; `onChangeText` difft prev/next (fügt neue Zeichen an, entfernt noch nicht gesendete beim Löschen), `enqueue(text, repeat)` hängt Baustein-Text an.
+- [x] **5 Textbausteine** (`preset-button-1..5`), immer sichtbar direkt über der Eingabeleiste. Leer = gestrichelt/„Leer". Kurz-Tipp gefüllt → auswählen (Highlight) + senden mit gespeicherter Wiederholung; Kurz-Tipp leer → öffnet Editor; Lang-Druck (350 ms) → `PresetEditor`-Modal (`src/morse/PresetEditor.tsx`, beliebige Länge).
+- [x] **Wiederholung pro Baustein** 1×/2×/3×/∞ (`preset-repeat-1/-2/-3/-inf`), Chips sichtbar sobald ein Baustein aktiv ist, Standard 1×. ∞ = fortlaufend mit Wortabstand-Pause bis Stopp.
+- [x] **Persistenz** (`src/morse/usePresets.ts`): alle 5 Bausteine (Text + Wiederholung) in AsyncStorage `funk_morse_presets_v1`, übersteht Neustart (verifiziert per Reload).
+- [x] **Sofort-Stopp** (`send-stop-button`) neben der Eingabeleiste, immer sichtbar: ausgegraut-rot wenn nichts sendet, SOLID ROT während Sendung (Live oder Baustein). Betätigung = sofortiger Abbruch (`clear()`: audio.stop + clearTimeout + Vibration.cancel + Torch aus), leert komplette Warteschlange inkl. Endlos, Zähler zurück auf 0.
+- [x] Tested green iteration_12 (Frontend 8/8 inkl. kritischem Endlos-Stopp + Persistenz + Live-Typing-Regression). Lint sauber.
